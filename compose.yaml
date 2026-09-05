@@ -18,7 +18,7 @@ services:
       context: ./backend
     command: sh -c "uv run python manage.py migrate && uv run python manage.py runserver 0.0.0.0:8000"
     environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-development-only-secret-key}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-development-only-secret-key-change-before-production}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
       POSTGRES_HOST: db

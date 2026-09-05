@@ -85,3 +85,11 @@ Returns the message displayed by the frontend:
 - `PATCH /api/films/{id}/archive/`: archive a film as staff with `cinema.change_film`.
 - `PATCH /api/authors/{id}/`: update an author as staff with `cinema.change_author`.
 - `DELETE /api/authors/{id}/`: delete an author without films as staff with `cinema.delete_author`.
+- `POST /api/auth/register/`: create a spectator account.
+- `POST /api/auth/login/`: return access and refresh JWTs.
+- `POST /api/auth/refresh/`: rotate a refresh JWT and return a new token pair.
+- `POST /api/auth/logout/`: blacklist a refresh JWT.
+
+Send the access token as `Authorization: Bearer <access>`. Send the refresh token in
+the `refresh` JSON field when refreshing or logging out. A successful refresh returns
+a replacement refresh token and invalidates the previous one.

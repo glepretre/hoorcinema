@@ -13,7 +13,13 @@ from cinema.serializers import (
     AuthorWriteSerializer,
     FilmSerializer,
     FilmWriteSerializer,
+    SpectatorRegistrationSerializer,
 )
+
+
+class RegisterView(generics.CreateAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = SpectatorRegistrationSerializer
 
 
 class CinemaPagination(PageNumberPagination):

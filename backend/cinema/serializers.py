@@ -1,6 +1,10 @@
+from django.contrib.auth.models import Group
+from django.contrib.auth.password_validation import validate_password
+from django.db import transaction
 from rest_framework import serializers
 
 from cinema.models import Author, Film, User
+from cinema.roles import SPECTATOR_GROUP
 
 
 class LocalRatingField(serializers.DecimalField):
@@ -136,3 +140,29 @@ class AuthorWriteSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         return AuthorSerializer(instance, context=self.context).data
+
+
+class SpectatorRegistrationSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(trim_whitespace=False, write_only=True)
+
+    class Meta:
+        model = User
+        fields = ("id", "username", "email", "first_name", "last_name", "password")
+        read_only_fields = ("id",)
+
+    def validate_password(self, value):
+        candidate = User(
+            username=self.initial_data.get("username", ""),
+            email=self.initial_data.get("email", ""),
+            first_name=self.initial_data.get("first_name", ""),
+            last_name=self.initial_data.get("last_name", ""),
+        )
+        validate_password(value, candidate)
+        return value
+
+    @transaction.atomic
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        user = User.objects.create_user(password=password, **validated_data)
+        user.groups.add(Group.objects.get(name=SPECTATOR_GROUP))
+        return user
