@@ -28,6 +28,17 @@ The backend waits for PostgreSQL, applies migrations, and starts Django. Create 
 docker compose exec backend uv run python manage.py createsuperuser
 ```
 
+Create the demo author, spectator, and administrator with passwords configured in
+`.env`:
+
+```bash
+docker compose exec backend uv run python manage.py seed_demo_data
+```
+
+The required variables are `DEMO_AUTHOR_PASSWORD`, `DEMO_SPECTATOR_PASSWORD`, and
+`DEMO_ADMIN_PASSWORD`. The command is idempotent and uses the usernames
+`demo_author`, `demo_spectator`, and `demo_admin`.
+
 ## Tests and quality checks
 
 Run backend checks in its container:

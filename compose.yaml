@@ -26,6 +26,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-cinema}
       POSTGRES_USER: ${POSTGRES_USER:-cinema}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-development-only-password}
+      DEMO_AUTHOR_PASSWORD: ${DEMO_AUTHOR_PASSWORD:-}
+      DEMO_SPECTATOR_PASSWORD: ${DEMO_SPECTATOR_PASSWORD:-}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-}
     depends_on:
       db:
         condition: service_healthy
