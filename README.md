@@ -114,3 +114,7 @@ a replacement refresh token and invalidates the previous one.
 
 Rating requests use a JSON body containing an integer `score` from 1 to 5. Rating
 and favorite endpoints require an authenticated user with the spectator role.
+
+## License
+
+Hoorcinema is available under the [MIT License](LICENSE).
