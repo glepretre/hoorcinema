@@ -1,4 +1,6 @@
 import os
+from datetime import date
+from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
@@ -6,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from cinema.models import AuthorRating, Favorite, Film, FilmRating
 from cinema.roles import AUTHOR_GROUP, SPECTATOR_GROUP, ensure_role_groups
 
 DEMO_USERS = (
@@ -68,6 +71,7 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             groups = ensure_role_groups()
+            users = {}
             for user_data in DEMO_USERS:
                 username = user_data["username"]
                 defaults = {
@@ -95,8 +99,74 @@ class Command(BaseCommand):
                 group_name = user_data.get("group")
                 if group_name:
                     user.groups.add(groups[group_name])
+                users[username] = user
 
                 action = "Created" if created else "Updated"
                 self.stdout.write(f"{action} {username}")
+
+            films = (
+                {
+                    "title": "The Last Projection",
+                    "description": "A projectionist prepares a cinema's final show.",
+                    "release_date": date(2024, 10, 12),
+                    "status": Film.Status.PUBLISHED,
+                    "tmdb_vote_average": Decimal("7.40"),
+                    "tmdb_vote_count": 128,
+                },
+                {
+                    "title": "Midnight Rehearsal",
+                    "description": "A film crew rehearses after the city goes quiet.",
+                    "release_date": date(2025, 2, 8),
+                    "status": Film.Status.DRAFT,
+                    "tmdb_vote_average": None,
+                    "tmdb_vote_count": 0,
+                },
+            )
+            demo_films = []
+            for film_data in films:
+                matching_films = list(
+                    Film.objects.filter(title=film_data["title"]).prefetch_related(
+                        "authors"
+                    )
+                )
+                film = matching_films[0] if len(matching_films) == 1 else None
+                owned_by_seed = (
+                    film is not None
+                    and film.source == Film.Source.ADMIN
+                    and users["demo_author"] in film.authors.all()
+                )
+                if matching_films and not owned_by_seed:
+                    raise CommandError(
+                        f"Refusing to overwrite existing film {film_data['title']}"
+                    )
+                created = film is None
+                if created:
+                    film = Film(title=film_data["title"])
+                for field, value in film_data.items():
+                    setattr(film, field, value)
+                film.source = Film.Source.ADMIN
+                film.save()
+                film.authors.set([users["demo_author"]])
+                demo_films.append(film)
+
+                action = "Created" if created else "Updated"
+                self.stdout.write(f"{action} {film.title}")
+
+            spectator = users["demo_spectator"]
+            author = users["demo_author"]
+            FilmRating.objects.update_or_create(
+                spectator=spectator,
+                film=demo_films[0],
+                defaults={"score": 5},
+            )
+            AuthorRating.objects.update_or_create(
+                spectator=spectator,
+                author=author,
+                defaults={"score": 4},
+            )
+            Favorite.objects.get_or_create(
+                spectator=spectator,
+                film=demo_films[0],
+            )
 
         self.stdout.write(self.style.SUCCESS("Demo data is ready."))
