@@ -39,6 +39,19 @@ The required variables are `DEMO_AUTHOR_PASSWORD`, `DEMO_SPECTATOR_PASSWORD`, an
 `DEMO_ADMIN_PASSWORD`. The command is idempotent and uses the usernames
 `demo_author`, `demo_spectator`, and `demo_admin`.
 
+Import popular films and their directors and writers from TMDb after setting
+`TMDB_API_TOKEN` in `.env`:
+
+```bash
+docker compose exec backend uv run python manage.py import_tmdb --limit 20 --page 1
+```
+
+The command updates imported records by TMDb ID and preserves local ratings and
+favorites. Imported films are published, and imported people receive unusable
+passwords. Use `--movie-id ID` for one film, `--language en-US` to select the
+TMDb language, or `--dry-run` to validate an import without saving it. Local
+records that conflict with a TMDb ID are never overwritten.
+
 ## Tests and quality checks
 
 Run backend checks in its container:
