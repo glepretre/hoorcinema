@@ -91,3 +91,48 @@ class AuthorSerializer(serializers.ModelSerializer):
             "local_rating",
             "films",
         )
+
+
+class FilmWriteSerializer(serializers.ModelSerializer):
+    authors = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Author.objects.all(),
+        required=False,
+    )
+
+    class Meta:
+        model = Film
+        fields = (
+            "title",
+            "description",
+            "release_date",
+            "status",
+            "authors",
+            "source",
+            "tmdb_id",
+            "tmdb_vote_average",
+            "tmdb_vote_count",
+            "poster_path",
+        )
+
+    def to_representation(self, instance):
+        return FilmSerializer(instance, context=self.context).data
+
+
+class AuthorWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Author
+        fields = (
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "date_of_birth",
+            "bio",
+            "avatar",
+            "source",
+            "tmdb_id",
+        )
+
+    def to_representation(self, instance):
+        return AuthorSerializer(instance, context=self.context).data

@@ -1,14 +1,19 @@
 from datetime import date
 
 import pytest
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.urls import reverse
 from rest_framework import serializers
 from rest_framework.test import APIClient
 
 from cinema.models import AuthorRating, Film, FilmRating, User
 from cinema.roles import AUTHOR_GROUP, SPECTATOR_GROUP
-from cinema.serializers import AuthorSerializer, FilmSerializer
+from cinema.serializers import (
+    AuthorSerializer,
+    AuthorWriteSerializer,
+    FilmSerializer,
+    FilmWriteSerializer,
+)
 
 
 @pytest.fixture
@@ -221,11 +226,7 @@ def test_invalid_choice_filters_return_json_400(url_name, parameters, field):
     ("method", "url_name", "detail"),
     [
         ("post", "film-list", False),
-        ("patch", "film-detail", True),
-        ("delete", "film-detail", True),
         ("post", "author-list", False),
-        ("patch", "author-detail", True),
-        ("delete", "author-detail", True),
     ],
 )
 def test_public_endpoints_are_read_only(method, url_name, detail, catalogue):
@@ -251,8 +252,244 @@ def test_list_query_count_is_constant(url_name, catalogue, django_assert_num_que
 
 
 def test_public_serializers_do_not_use_serializer_method_fields():
-    for serializer_class in (FilmSerializer, AuthorSerializer):
+    for serializer_class in (
+        FilmSerializer,
+        AuthorSerializer,
+        FilmWriteSerializer,
+        AuthorWriteSerializer,
+    ):
         assert not any(
             isinstance(field, serializers.SerializerMethodField)
             for field in serializer_class().fields.values()
         )
+
+
+def grant_permission(user, codename):
+    permission = Permission.objects.get(
+        content_type__app_label="cinema",
+        codename=codename,
+    )
+    user.user_permissions.add(permission)
+
+
+@pytest.fixture
+def staff_user(db):
+    return User.objects.create_user(username="staff", is_staff=True)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("method", "url_name", "object_key", "payload"),
+    [
+        ("patch", "film-detail", "local_film", {"title": "Changed"}),
+        ("patch", "film-archive", "local_film", {}),
+        ("patch", "author-detail", "local_author", {"bio": "Changed"}),
+        ("delete", "author-detail", "local_author", None),
+    ],
+)
+@pytest.mark.parametrize("actor", ["anonymous", "spectator", "staff"])
+def test_administration_operations_reject_unauthorized_users(
+    method,
+    url_name,
+    object_key,
+    payload,
+    actor,
+    catalogue,
+    staff_user,
+):
+    client = APIClient()
+    if actor == "spectator":
+        spectator = User.objects.create_user(username=f"spectator_{url_name}_{method}")
+        spectator.groups.add(Group.objects.get(name=SPECTATOR_GROUP))
+        client.force_authenticate(spectator)
+    elif actor == "staff":
+        client.force_authenticate(staff_user)
+
+    response = getattr(client, method)(
+        reverse(url_name, args=(catalogue[object_key].pk,)),
+        payload,
+        format="json",
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_staff_with_permission_can_update_film(catalogue, staff_user):
+    grant_permission(staff_user, "change_film")
+    client = APIClient()
+    client.force_authenticate(staff_user)
+
+    response = client.patch(
+        reverse("film-detail", args=(catalogue["local_film"].pk,)),
+        {
+            "title": "Northern Lights",
+            "authors": [catalogue["remote_author"].pk],
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["title"] == "Northern Lights"
+    assert response.json()["authors"][0]["username"] == "tmdb_84"
+    catalogue["local_film"].refresh_from_db()
+    assert catalogue["local_film"].title == "Northern Lights"
+    assert list(catalogue["local_film"].authors.all()) == [catalogue["remote_author"]]
+
+
+@pytest.mark.django_db
+def test_staff_with_permission_can_update_author(catalogue, staff_user):
+    grant_permission(staff_user, "change_author")
+    client = APIClient()
+    client.force_authenticate(staff_user)
+
+    response = client.patch(
+        reverse("author-detail", args=(catalogue["local_author"].pk,)),
+        {"bio": "Director and screenwriter."},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["bio"] == "Director and screenwriter."
+    assert response.json()["films"][0]["title"] == "Aurora Story"
+
+
+@pytest.mark.django_db
+def test_author_deletion_requires_no_authored_films(catalogue, staff_user):
+    grant_permission(staff_user, "delete_author")
+    client = APIClient()
+    client.force_authenticate(staff_user)
+
+    protected_response = client.delete(
+        reverse("author-detail", args=(catalogue["local_author"].pk,))
+    )
+
+    assert protected_response.status_code == 409
+    assert protected_response.json() == {
+        "code": "author_has_films",
+        "detail": "Authors with films cannot be deleted.",
+    }
+    assert User.objects.filter(pk=catalogue["local_author"].pk).exists()
+
+    author = User.objects.create_user(username="author_without_films")
+    author.groups.add(Group.objects.get(name=AUTHOR_GROUP))
+    deleted_response = client.delete(reverse("author-detail", args=(author.pk,)))
+
+    assert deleted_response.status_code == 204
+    assert not User.objects.filter(pk=author.pk).exists()
+
+
+@pytest.mark.django_db
+def test_film_archiving_is_idempotent(catalogue, staff_user):
+    grant_permission(staff_user, "change_film")
+    client = APIClient()
+    client.force_authenticate(staff_user)
+    url = reverse("film-archive", args=(catalogue["local_film"].pk,))
+
+    first_response = client.patch(url, {}, format="json")
+    catalogue["local_film"].refresh_from_db()
+    first_updated_at = catalogue["local_film"].updated_at
+    second_response = client.patch(url, {}, format="json")
+    catalogue["local_film"].refresh_from_db()
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert first_response.json()["status"] == Film.Status.ARCHIVED
+    assert second_response.json()["status"] == Film.Status.ARCHIVED
+    assert catalogue["local_film"].updated_at == first_updated_at
+
+
+@pytest.mark.django_db
+def test_author_and_film_updates_return_json_validation_errors(catalogue, staff_user):
+    grant_permission(staff_user, "change_film")
+    grant_permission(staff_user, "change_author")
+    client = APIClient()
+    client.force_authenticate(staff_user)
+
+    film_response = client.patch(
+        reverse("film-detail", args=(catalogue["local_film"].pk,)),
+        {"status": "INVALID"},
+        format="json",
+    )
+    author_response = client.patch(
+        reverse("author-detail", args=(catalogue["local_author"].pk,)),
+        {"username": ""},
+        format="json",
+    )
+
+    assert film_response.status_code == 400
+    assert set(film_response.json()) == {"status"}
+    assert author_response.status_code == 400
+    assert set(author_response.json()) == {"username"}
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("method", "url_name", "object_key", "payload", "expected_status"),
+    [
+        ("patch", "film-detail", "local_film", {"title": "Super Film"}, 200),
+        ("patch", "film-archive", "local_film", {}, 200),
+        ("patch", "author-detail", "local_author", {"bio": "Super Bio"}, 200),
+    ],
+)
+def test_superuser_can_modify_films_and_authors(
+    method,
+    url_name,
+    object_key,
+    payload,
+    expected_status,
+    catalogue,
+):
+    superuser = User.objects.create_superuser(username=f"root_{url_name}_{method}")
+    client = APIClient()
+    client.force_authenticate(superuser)
+
+    response = getattr(client, method)(
+        reverse(url_name, args=(catalogue[object_key].pk,)),
+        payload,
+        format="json",
+    )
+
+    assert response.status_code == expected_status
+
+
+@pytest.mark.django_db
+def test_superuser_can_delete_author_without_films():
+    author = User.objects.create_user(username="disposable_author")
+    author.groups.add(Group.objects.get(name=AUTHOR_GROUP))
+    superuser = User.objects.create_superuser(username="root_delete_author")
+    client = APIClient()
+    client.force_authenticate(superuser)
+
+    response = client.delete(reverse("author-detail", args=(author.pk,)))
+
+    assert response.status_code == 204
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("method", "url_name", "object_key"),
+    [
+        ("delete", "film-detail", "local_film"),
+        ("put", "film-detail", "local_film"),
+        ("put", "author-detail", "local_author"),
+        ("put", "film-archive", "local_film"),
+    ],
+)
+def test_unsupported_administration_methods_are_not_available(
+    method,
+    url_name,
+    object_key,
+    catalogue,
+):
+    superuser = User.objects.create_superuser(username=f"root_{method}_{url_name}")
+    client = APIClient()
+    client.force_authenticate(superuser)
+
+    response = getattr(client, method)(
+        reverse(url_name, args=(catalogue[object_key].pk,)),
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 405

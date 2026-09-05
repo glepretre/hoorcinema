@@ -3,6 +3,7 @@ from django.urls import path
 from cinema.views import (
     AuthorDetailView,
     AuthorListView,
+    FilmArchiveView,
     FilmDetailView,
     FilmListView,
     health,
@@ -14,6 +15,11 @@ urlpatterns = [
     path("hello/", hello, name="hello"),
     path("films/", FilmListView.as_view(), name="film-list"),
     path("films/<int:pk>/", FilmDetailView.as_view(), name="film-detail"),
+    path(
+        "films/<int:pk>/archive/",
+        FilmArchiveView.as_view(),
+        name="film-archive",
+    ),
     path("authors/", AuthorListView.as_view(), name="author-list"),
     path("authors/<int:pk>/", AuthorDetailView.as_view(), name="author-detail"),
 ]

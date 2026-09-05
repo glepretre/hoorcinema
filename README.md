@@ -76,3 +76,12 @@ Returns the message displayed by the frontend:
 ```json
 {"message": "Hello, World!"}
 ```
+
+### Endpoints
+
+- `GET /api/films/` and `GET /api/films/{id}/`: public film list and detail.
+- `GET /api/authors/` and `GET /api/authors/{id}/`: public author list and detail.
+- `PATCH /api/films/{id}/`: update a film as staff with `cinema.change_film`.
+- `PATCH /api/films/{id}/archive/`: archive a film as staff with `cinema.change_film`.
+- `PATCH /api/authors/{id}/`: update an author as staff with `cinema.change_author`.
+- `DELETE /api/authors/{id}/`: delete an author without films as staff with `cinema.delete_author`.
