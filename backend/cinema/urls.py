@@ -8,9 +8,13 @@ from rest_framework_simplejwt.views import (
 from cinema.views import (
     AuthorDetailView,
     AuthorListView,
+    AuthorRatingView,
+    FavoriteListView,
     FilmArchiveView,
     FilmDetailView,
+    FilmFavoriteView,
     FilmListView,
+    FilmRatingView,
     RegisterView,
     health,
     hello,
@@ -26,10 +30,26 @@ urlpatterns = [
     path("films/", FilmListView.as_view(), name="film-list"),
     path("films/<int:pk>/", FilmDetailView.as_view(), name="film-detail"),
     path(
+        "films/<int:pk>/rating/",
+        FilmRatingView.as_view(),
+        name="film-rating",
+    ),
+    path(
+        "films/<int:pk>/favorite/",
+        FilmFavoriteView.as_view(),
+        name="film-favorite",
+    ),
+    path(
         "films/<int:pk>/archive/",
         FilmArchiveView.as_view(),
         name="film-archive",
     ),
     path("authors/", AuthorListView.as_view(), name="author-list"),
     path("authors/<int:pk>/", AuthorDetailView.as_view(), name="author-detail"),
+    path(
+        "authors/<int:pk>/rating/",
+        AuthorRatingView.as_view(),
+        name="author-rating",
+    ),
+    path("me/favorites/", FavoriteListView.as_view(), name="favorite-list"),
 ]

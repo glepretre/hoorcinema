@@ -89,7 +89,15 @@ Returns the message displayed by the frontend:
 - `POST /api/auth/login/`: return access and refresh JWTs.
 - `POST /api/auth/refresh/`: rotate a refresh JWT and return a new token pair.
 - `POST /api/auth/logout/`: blacklist a refresh JWT.
+- `PUT /api/films/{id}/rating/`: create or update the current spectator's film rating.
+- `PUT /api/authors/{id}/rating/`: create or update the current spectator's author rating.
+- `POST /api/films/{id}/favorite/`: add a film to the current spectator's favorites.
+- `DELETE /api/films/{id}/favorite/`: remove a film from the current spectator's favorites.
+- `GET /api/me/favorites/`: list the current spectator's paginated favorites.
 
 Send the access token as `Authorization: Bearer <access>`. Send the refresh token in
 the `refresh` JSON field when refreshing or logging out. A successful refresh returns
 a replacement refresh token and invalidates the previous one.
+
+Rating requests use a JSON body containing an integer `score` from 1 to 5. Rating
+and favorite endpoints require an authenticated user with the spectator role.

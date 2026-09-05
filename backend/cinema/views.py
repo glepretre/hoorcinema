@@ -6,11 +6,13 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from cinema.filters import ExactChoiceFilterBackend, NullsLastOrderingFilter
-from cinema.models import Author, Film, User
-from cinema.permissions import StaffDjangoModelPermissions
+from cinema.models import Author, AuthorRating, Favorite, Film, FilmRating, User
+from cinema.permissions import IsSpectator, StaffDjangoModelPermissions
 from cinema.serializers import (
+    AuthorRatingSerializer,
     AuthorSerializer,
     AuthorWriteSerializer,
+    FilmRatingSerializer,
     FilmSerializer,
     FilmWriteSerializer,
     SpectatorRegistrationSerializer,
@@ -78,6 +80,59 @@ class FilmArchiveView(FilmQuerysetMixin, generics.GenericAPIView):
         )
 
 
+class FilmRatingView(generics.GenericAPIView):
+    permission_classes = (IsSpectator,)
+    queryset = Film.objects.all()
+    serializer_class = FilmRatingSerializer
+
+    def put(self, request, *args, **kwargs):
+        film = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        rating, created = FilmRating.objects.update_or_create(
+            spectator=request.user,
+            film=film,
+            defaults={"score": serializer.validated_data["score"]},
+        )
+        return Response(
+            self.get_serializer(rating).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+
+class FilmFavoriteView(FilmQuerysetMixin, generics.GenericAPIView):
+    permission_classes = (IsSpectator,)
+
+    def post(self, request, *args, **kwargs):
+        film = self.get_object()
+        _, created = Favorite.objects.get_or_create(
+            spectator=request.user,
+            film=film,
+        )
+        return Response(
+            FilmSerializer(film, context=self.get_serializer_context()).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+    def delete(self, request, *args, **kwargs):
+        film = self.get_object()
+        Favorite.objects.filter(spectator=request.user, film=film).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FavoriteListView(FilmQuerysetMixin, generics.ListAPIView):
+    permission_classes = (IsSpectator,)
+    pagination_class = CinemaPagination
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .filter(favorites__spectator=self.request.user)
+            .order_by("title", "pk")
+        )
+
+
 class AuthorQuerysetMixin:
     serializer_class = AuthorSerializer
 
@@ -124,6 +179,26 @@ class AuthorDetailView(AuthorQuerysetMixin, generics.RetrieveUpdateDestroyAPIVie
                 status=status.HTTP_409_CONFLICT,
             )
         return super().destroy(request, *args, **kwargs)
+
+
+class AuthorRatingView(generics.GenericAPIView):
+    permission_classes = (IsSpectator,)
+    queryset = Author.objects.all()
+    serializer_class = AuthorRatingSerializer
+
+    def put(self, request, *args, **kwargs):
+        author = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        rating, created = AuthorRating.objects.update_or_create(
+            spectator=request.user,
+            author=author,
+            defaults={"score": serializer.validated_data["score"]},
+        )
+        return Response(
+            self.get_serializer(rating).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
 
 
 @api_view(["GET"])

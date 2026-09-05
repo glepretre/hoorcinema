@@ -3,7 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from rest_framework import serializers
 
-from cinema.models import Author, Film, User
+from cinema.models import Author, AuthorRating, Film, FilmRating, User
 from cinema.roles import SPECTATOR_GROUP
 
 
@@ -140,6 +140,20 @@ class AuthorWriteSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         return AuthorSerializer(instance, context=self.context).data
+
+
+class FilmRatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FilmRating
+        fields = ("id", "film", "score")
+        read_only_fields = ("id", "film")
+
+
+class AuthorRatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AuthorRating
+        fields = ("id", "author", "score")
+        read_only_fields = ("id", "author")
 
 
 class SpectatorRegistrationSerializer(serializers.ModelSerializer):
