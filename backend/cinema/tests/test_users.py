@@ -54,7 +54,7 @@ def test_specialized_user_models_are_registered_in_admin():
 
 
 @pytest.mark.django_db
-def test_role_admin_protects_privileges_and_preserves_role_group():
+def test_role_admin_protects_privileges_and_preserves_role_group(monkeypatch):
     staff_user = User.objects.create_user(username="staff", is_staff=True)
     author = User.objects.create_user(username="admin_created_author")
     request = RequestFactory().get("/admin/")
@@ -68,6 +68,11 @@ def test_role_admin_protects_privileges_and_preserves_role_group():
         def save_m2m():
             pass
 
+    def save_formset(request, form, formset, change):
+        assert author.groups.filter(name=AUTHOR_GROUP).exists()
+
+    monkeypatch.setattr(author_admin, "save_formset", save_formset)
+
     assert {
         "is_staff",
         "is_superuser",
@@ -75,7 +80,7 @@ def test_role_admin_protects_privileges_and_preserves_role_group():
         "user_permissions",
     }.issubset(author_admin.get_readonly_fields(request, author))
 
-    author_admin.save_related(request, Form(), [], change=False)
+    author_admin.save_related(request, Form(), [object()], change=False)
 
     assert author.groups.get().name == AUTHOR_GROUP
     assert Author.objects.filter(pk=author.pk).exists()
