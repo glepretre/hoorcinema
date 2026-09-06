@@ -308,11 +308,7 @@ export function FilmCatalogue({
               locale={{
                 emptyText: (
                   <Empty
-                    description={
-                      isArchived
-                        ? "Aucun film archivé"
-                        : "Aucun film ne correspond à votre recherche."
-                    }
+                    description="Aucun film ne correspond à votre recherche."
                   />
                 ),
               }}
