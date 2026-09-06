@@ -69,16 +69,20 @@ function ProfileIcon() {
 
 interface FilmCatalogueProps {
   isArchived: boolean;
+  isAuthenticated: boolean;
   isLoggingOut?: boolean;
   onChangeCatalogue: () => void;
+  onLogin: () => void;
   onLogout: () => void;
   onSelectFilm: (filmId: number) => void;
 }
 
 export function FilmCatalogue({
   isArchived,
+  isAuthenticated,
   isLoggingOut = false,
   onChangeCatalogue,
+  onLogin,
   onLogout,
   onSelectFilm,
 }: FilmCatalogueProps) {
@@ -179,29 +183,35 @@ export function FilmCatalogue({
           </Paragraph>
         </div>
         <div className="catalogue-header-actions">
-          <Popover
-            content={
-              <Menu
-                selectable={false}
-                items={[
-                  {
-                    key: "logout",
-                    label: isLoggingOut ? "Déconnexion…" : "Se déconnecter",
-                    disabled: isLoggingOut,
-                  },
-                ]}
-                onClick={onLogout}
-              />
-            }
-            arrow={{ pointAtCenter: false }}
-            placement="bottomLeft"
-            rootClassName="account-popover"
-            trigger="click"
-          >
-            <Button className="account-trigger" icon={<ProfileIcon />}>
-              Mon compte
+          {isAuthenticated ? (
+            <Popover
+              content={
+                <Menu
+                  selectable={false}
+                  items={[
+                    {
+                      key: "logout",
+                      label: isLoggingOut ? "Déconnexion…" : "Se déconnecter",
+                      disabled: isLoggingOut,
+                    },
+                  ]}
+                  onClick={onLogout}
+                />
+              }
+              arrow={{ pointAtCenter: false }}
+              placement="bottomLeft"
+              rootClassName="account-popover"
+              trigger="click"
+            >
+              <Button className="account-trigger" icon={<ProfileIcon />}>
+                Mon compte
+              </Button>
+            </Popover>
+          ) : (
+            <Button className="account-trigger" onClick={onLogin}>
+              Se connecter
             </Button>
-          </Popover>
+          )}
         </div>
       </header>
 
@@ -307,9 +317,7 @@ export function FilmCatalogue({
               dataSource={filmsQuery.data.results}
               locale={{
                 emptyText: (
-                  <Empty
-                    description="Aucun film ne correspond à votre recherche."
-                  />
+                  <Empty description="Aucun film ne correspond à votre recherche." />
                 ),
               }}
               pagination={false}

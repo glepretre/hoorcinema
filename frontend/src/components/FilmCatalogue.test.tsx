@@ -42,7 +42,11 @@ const response: PaginatedFilms = {
 
 const onSelectFilm = vi.fn();
 
-function renderCatalogue(isArchived = false) {
+function renderCatalogue(
+  isArchived = false,
+  isAuthenticated = true,
+  onLogin = vi.fn(),
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -50,7 +54,9 @@ function renderCatalogue(isArchived = false) {
     <QueryClientProvider client={queryClient}>
       <FilmCatalogue
         isArchived={isArchived}
+        isAuthenticated={isAuthenticated}
         onChangeCatalogue={vi.fn()}
+        onLogin={onLogin}
         onLogout={vi.fn()}
         onSelectFilm={onSelectFilm}
       />
@@ -204,5 +210,16 @@ describe("film catalogue", () => {
     expect(
       screen.getByRole("button", { name: "Retour au catalogue" }),
     ).toBeTruthy();
+  });
+
+  test("offers login instead of account access to anonymous users", async () => {
+    const onLogin = vi.fn();
+    renderCatalogue(false, false, onLogin);
+
+    await screen.findByText("Cinema Paradiso");
+    fireEvent.click(screen.getByRole("button", { name: "Se connecter" }));
+
+    expect(onLogin).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("button", { name: "Mon compte" })).toBeNull();
   });
 });

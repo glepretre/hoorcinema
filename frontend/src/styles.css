@@ -54,6 +54,21 @@ body {
   line-height: 1.45;
 }
 
+.auth-story .browse-catalogue.ant-btn {
+  width: fit-content;
+  margin-top: 30px;
+  border-color: #e27450;
+  color: #f5efe4;
+  background: #d85b36;
+  font-weight: 700;
+}
+
+.auth-story .browse-catalogue.ant-btn:hover {
+  border-color: #ef8c6c;
+  color: #fff;
+  background: #a94127;
+}
+
 .text-on-dark.ant-typography {
   color: #c8bdb2;
 }

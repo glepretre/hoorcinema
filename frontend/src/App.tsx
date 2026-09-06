@@ -9,18 +9,20 @@ import { useAuthStore } from "./store/auth";
 import { useCatalogueStore } from "./store/catalogue";
 
 const ARCHIVED_FILMS_PATH = "/films/archives/";
+const FILMS_PATH = "/films/";
 const LOGIN_PATH = "/login/";
 
-type CataloguePath = "/" | typeof ARCHIVED_FILMS_PATH;
+type CataloguePath = typeof FILMS_PATH | typeof ARCHIVED_FILMS_PATH;
 
 interface AppRoute {
   authMode: AuthMode;
   cataloguePath: CataloguePath;
   filmId: number | null;
+  isAuthRoute: boolean;
 }
 
 function isCataloguePath(value: unknown): value is CataloguePath {
-  return value === "/" || value === ARCHIVED_FILMS_PATH;
+  return value === FILMS_PATH || value === ARCHIVED_FILMS_PATH;
 }
 
 function routeFromLocation(): AppRoute {
@@ -31,15 +33,20 @@ function routeFromLocation(): AppRoute {
       ?.cataloguePath;
     return {
       authMode: "register",
-      cataloguePath: isCataloguePath(cataloguePath) ? cataloguePath : "/",
+      cataloguePath: isCataloguePath(cataloguePath)
+        ? cataloguePath
+        : FILMS_PATH,
       filmId: Number(match[1]),
+      isAuthRoute: false,
     };
   }
   return {
     authMode:
       pathname === LOGIN_PATH || pathname === "/login" ? "login" : "register",
-    cataloguePath: pathname === ARCHIVED_FILMS_PATH ? ARCHIVED_FILMS_PATH : "/",
+    cataloguePath:
+      pathname === ARCHIVED_FILMS_PATH ? ARCHIVED_FILMS_PATH : FILMS_PATH,
     filmId: null,
+    isAuthRoute: pathname !== FILMS_PATH && pathname !== ARCHIVED_FILMS_PATH,
   };
 }
 
@@ -67,25 +74,36 @@ export default function App() {
       "",
       `/films/${selectedFilmId}/`,
     );
-    setRoute({ ...route, filmId: selectedFilmId });
+    setRoute({ ...route, filmId: selectedFilmId, isAuthRoute: false });
   };
 
   const navigateToCatalogue = (cataloguePath: CataloguePath) => {
     history.pushState(null, "", cataloguePath);
     useCatalogueStore.getState().setPage(1);
-    setRoute({ authMode: "register", cataloguePath, filmId: null });
+    setRoute({
+      authMode: "register",
+      cataloguePath,
+      filmId: null,
+      isAuthRoute: false,
+    });
   };
 
   const navigateToAuth = (authMode: AuthMode) => {
     history.pushState(null, "", authMode === "login" ? LOGIN_PATH : "/");
-    setRoute({ authMode, cataloguePath: "/", filmId: null });
+    setRoute({
+      authMode,
+      cataloguePath: FILMS_PATH,
+      filmId: null,
+      isAuthRoute: true,
+    });
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && route.isAuthRoute) {
     return (
       <AuthScreen
         mode={route.authMode}
-        onLogin={() => navigateToCatalogue("/")}
+        onBrowse={() => navigateToCatalogue(FILMS_PATH)}
+        onLogin={() => navigateToCatalogue(FILMS_PATH)}
         onModeChange={navigateToAuth}
       />
     );
@@ -97,15 +115,18 @@ export default function App() {
     <FilmDetail
       filmId={route.filmId}
       backLabel={isArchived ? "Retour aux films archivés" : undefined}
+      isAuthenticated={isAuthenticated}
       onBack={() => navigateToCatalogue(route.cataloguePath)}
     />
   ) : (
     <FilmCatalogue
       isArchived={isArchived}
+      isAuthenticated={isAuthenticated}
       isLoggingOut={logoutMutation.isPending}
       onChangeCatalogue={() =>
-        navigateToCatalogue(isArchived ? "/" : ARCHIVED_FILMS_PATH)
+        navigateToCatalogue(isArchived ? FILMS_PATH : ARCHIVED_FILMS_PATH)
       }
+      onLogin={() => navigateToAuth("login")}
       onLogout={() => {
         navigateToAuth("login");
         logoutMutation.mutate();

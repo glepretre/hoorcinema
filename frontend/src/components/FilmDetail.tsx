@@ -14,6 +14,7 @@ const { Paragraph, Text, Title } = Typography;
 interface FilmDetailProps {
   filmId: number;
   backLabel?: string;
+  isAuthenticated: boolean;
   onBack: () => void;
 }
 
@@ -57,6 +58,7 @@ function ArrowBackIcon() {
 export function FilmDetail({
   filmId,
   backLabel = "Retour au catalogue",
+  isAuthenticated,
   onBack,
 }: FilmDetailProps) {
   const queryClient = useQueryClient();
@@ -244,11 +246,13 @@ export function FilmDetail({
                 {localRating(film.local_rating)}
               </Text>
               <Text className="rating-label">Note Hoorcinema</Text>
-              <RatingPopover
-                label={`Noter ${film.title}`}
-                onRate={(score) => rateFilm(film.id, score)}
-                onRated={(score) => handleRated("Film", score)}
-              />
+              {isAuthenticated ? (
+                <RatingPopover
+                  label={`Noter ${film.title}`}
+                  onRate={(score) => rateFilm(film.id, score)}
+                  onRated={(score) => handleRated("Film", score)}
+                />
+              ) : null}
             </div>
             <div>
               <Text className="rating-value">
@@ -298,11 +302,13 @@ export function FilmDetail({
                       <Text className="author-rating">
                         {localRating(author.local_rating)}
                       </Text>
-                      <RatingPopover
-                        label={`Noter ${authorName(author)}`}
-                        onRate={(score) => rateAuthor(author.id, score)}
-                        onRated={(score) => handleRated("Auteur", score)}
-                      />
+                      {isAuthenticated ? (
+                        <RatingPopover
+                          label={`Noter ${authorName(author)}`}
+                          onRate={(score) => rateAuthor(author.id, score)}
+                          onRated={(score) => handleRated("Auteur", score)}
+                        />
+                      ) : null}
                     </div>
                   </div>
                 ))}

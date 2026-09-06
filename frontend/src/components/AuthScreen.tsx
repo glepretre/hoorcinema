@@ -16,6 +16,7 @@ export type AuthMode = "register" | "login";
 
 interface AuthScreenProps {
   mode: AuthMode;
+  onBrowse: () => void;
   onLogin: () => void;
   onModeChange: (mode: AuthMode) => void;
 }
@@ -30,7 +31,12 @@ function errorMessage(error: Error): string {
   return "Impossible de contacter le service. Réessayez dans un instant.";
 }
 
-export function AuthScreen({ mode, onLogin, onModeChange }: AuthScreenProps) {
+export function AuthScreen({
+  mode,
+  onBrowse,
+  onLogin,
+  onModeChange,
+}: AuthScreenProps) {
   const [registered, setRegistered] = useState(false);
   const registerMutation = useMutation({ mutationFn: registerSpectator });
   const loginMutation = useMutation({ mutationFn: login, onSuccess: onLogin });
@@ -59,6 +65,9 @@ export function AuthScreen({ mode, onLogin, onModeChange }: AuthScreenProps) {
           Retrouvez les films qui vous marquent. Notez-les, gardez vos favoris
           et composez une collection à votre image.
         </Paragraph>
+        <Button className="browse-catalogue" size="large" onClick={onBrowse}>
+          Accéder au catalogue
+        </Button>
         <div className="film-strip" aria-hidden="true">
           <span />
           <span />

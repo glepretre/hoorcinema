@@ -85,6 +85,7 @@ afterEach(() => {
 
 describe("film navigation", () => {
   test("opens a film URL from the catalogue and returns", async () => {
+    history.replaceState(null, "", "/films/");
     useAuthStore.getState().setTokens({ access: "access", refresh: "refresh" });
     vi.mocked(filmsApi.getFilms).mockResolvedValue({
       count: 1,
@@ -105,7 +106,7 @@ describe("film navigation", () => {
     fireEvent.click(
       screen.getByRole("button", { name: /Retour au catalogue/ }),
     );
-    expect(location.pathname).toBe("/");
+    expect(location.pathname).toBe("/films/");
     expect(
       await screen.findByRole("heading", { name: "Films à l’affiche" }),
     ).toBeTruthy();
@@ -159,6 +160,7 @@ describe("film navigation", () => {
   });
 
   test("navigates between active and archived catalogues", async () => {
+    history.replaceState(null, "", "/films/");
     useAuthStore.getState().setTokens({ access: "access", refresh: "refresh" });
     renderApp();
 
@@ -175,7 +177,45 @@ describe("film navigation", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Retour au catalogue" }),
     );
-    expect(location.pathname).toBe("/");
+    expect(location.pathname).toBe("/films/");
+  });
+
+  test("lets an anonymous user browse the catalogue and film details", async () => {
+    vi.mocked(filmsApi.getFilms).mockResolvedValue({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [film],
+    });
+    renderApp();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Accéder au catalogue" }),
+    );
+
+    expect(location.pathname).toBe("/films/");
+    expect(await screen.findByText("Cinema Paradiso")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Se connecter" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Mon compte" })).toBeNull();
+
+    fireEvent.click(screen.getByLabelText("Voir Cinema Paradiso"));
+
+    expect(
+      await screen.findByRole("heading", { name: "Cinema Paradiso" }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Noter/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Archiver" })).toBeNull();
+  });
+
+  test("sends an anonymous catalogue user to login", async () => {
+    history.replaceState(null, "", "/films/");
+    renderApp();
+
+    await screen.findByRole("heading", { name: "Films à l’affiche" });
+    fireEvent.click(screen.getByRole("button", { name: "Se connecter" }));
+
+    expect(location.pathname).toBe("/login/");
+    expect(screen.getByRole("heading", { name: "Se connecter" })).toBeTruthy();
   });
 });
 
@@ -270,6 +310,7 @@ describe("authentication screen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Se connecter" }));
 
     await screen.findByRole("heading", { name: "Films à l’affiche" });
+    expect(location.pathname).toBe("/films/");
     fireEvent.click(screen.getByRole("button", { name: "Mon compte" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Se déconnecter" }));
 

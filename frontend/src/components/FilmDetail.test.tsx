@@ -55,13 +55,22 @@ const film: Film = {
   updated_at: "2026-01-01T10:00:00Z",
 };
 
-function renderDetail(onBack = vi.fn(), backLabel?: string) {
+function renderDetail(
+  onBack = vi.fn(),
+  backLabel?: string,
+  isAuthenticated = true,
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   render(
     <QueryClientProvider client={queryClient}>
-      <FilmDetail filmId={7} backLabel={backLabel} onBack={onBack} />
+      <FilmDetail
+        filmId={7}
+        backLabel={backLabel}
+        isAuthenticated={isAuthenticated}
+        onBack={onBack}
+      />
     </QueryClientProvider>,
   );
   return onBack;
@@ -223,6 +232,19 @@ describe("film detail", () => {
 
     expect(screen.queryByRole("button", { name: "Archiver" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Désarchiver" })).toBeNull();
+  });
+
+  test("hides all mutation actions from anonymous users", async () => {
+    useAuthStore.getState().clearTokens();
+    renderDetail(vi.fn(), undefined, false);
+
+    await screen.findByRole("heading", { name: "Cinema Paradiso" });
+
+    expect(screen.queryByRole("button", { name: /^Noter/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Archiver" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Désarchiver" })).toBeNull();
+    expect(ratingsApi.rateFilm).not.toHaveBeenCalled();
+    expect(ratingsApi.rateAuthor).not.toHaveBeenCalled();
   });
 
   test("confirms archival, invalidates film caches, and offers unarchival", async () => {
