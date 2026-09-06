@@ -2,7 +2,10 @@ import { apiRequest } from "./client";
 import type { Film, FilmListParams, PaginatedFilms } from "../types/film";
 
 export function buildFilmListPath(params: FilmListParams): string {
-  const query = new URLSearchParams({ page: String(params.page) });
+  const query = new URLSearchParams({
+    page: String(params.page),
+    page_size: String(params.pageSize),
+  });
 
   if (params.search) {
     query.set("search", params.search);

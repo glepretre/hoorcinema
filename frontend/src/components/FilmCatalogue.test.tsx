@@ -54,6 +54,7 @@ function renderCatalogue() {
 }
 
 beforeEach(() => {
+  localStorage.clear();
   useCatalogueStore.getState().reset();
   vi.mocked(filmsApi.getFilms).mockResolvedValue(response);
 });
@@ -72,6 +73,9 @@ describe("film catalogue", () => {
     expect(screen.getByText("Trier par", { selector: "label" })).toBeTruthy();
     expect(screen.getByText("Chargement des films…")).toBeTruthy();
     expect(await screen.findByText("Cinema Paradiso")).toBeTruthy();
+    expect(
+      screen.getByText("Films par page", { selector: "label" }),
+    ).toBeTruthy();
     expect(
       screen
         .getByText("Parcourez la collection, des nouveautés aux classiques.")
@@ -105,6 +109,7 @@ describe("film catalogue", () => {
     await waitFor(() =>
       expect(filmsApi.getFilms).toHaveBeenLastCalledWith({
         page: 1,
+        pageSize: 10,
         search: "paradis",
         status: undefined,
         ordering: "title",
@@ -133,6 +138,7 @@ describe("film catalogue", () => {
     renderCatalogue();
     await screen.findByText("Cinema Paradiso");
 
+    expect(screen.getByRole("group", { name: "Pages" })).toBeTruthy();
     fireEvent.click(screen.getByTitle("2"));
 
     await waitFor(() =>
@@ -140,6 +146,22 @@ describe("film catalogue", () => {
         expect.objectContaining({ page: 2 }),
       ),
     );
+  });
+
+  test("requests and stores the selected page size", async () => {
+    useCatalogueStore.getState().setPage(3);
+    renderCatalogue();
+    await screen.findByText("Cinema Paradiso");
+
+    fireEvent.mouseDown(screen.getByLabelText("Nombre de films par page"));
+    fireEvent.click(await screen.findByText("50 films"));
+
+    await waitFor(() =>
+      expect(filmsApi.getFilms).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 1, pageSize: 50 }),
+      ),
+    );
+    expect(useCatalogueStore.getState().pageSize).toBe(50);
   });
 
   test("shows French empty and error states", async () => {

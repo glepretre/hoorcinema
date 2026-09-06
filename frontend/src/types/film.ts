@@ -6,6 +6,7 @@ export type FilmStatus =
   | "Released"
   | "Canceled";
 export type FilmSource = "ADMIN" | "TMDB";
+export type FilmPageSize = 10 | 50 | 100;
 export type FilmOrdering =
   "title" | "release_date" | "-release_date" | "local_rating" | "-local_rating";
 
@@ -47,6 +48,7 @@ export interface PaginatedFilms {
 
 export interface FilmListParams {
   page: number;
+  pageSize: FilmPageSize;
   search?: string;
   status?: FilmStatus;
   ordering?: FilmOrdering;

@@ -228,7 +228,8 @@ body {
   gap: 6px;
 }
 
-.catalogue-control > label {
+.catalogue-control > label,
+.catalogue-control-label {
   padding-left: 4px;
   color: #746b63;
   font-size: 11px;
@@ -239,8 +240,27 @@ body {
 
 .catalogue-controls .ant-input,
 .catalogue-controls .ant-input-affix-wrapper,
-.catalogue-controls .ant-select-selector {
+.catalogue-controls .ant-select-selector,
+.catalogue-pagination-bar .ant-select-selector {
   background: #faf7f2 !important;
+}
+
+.catalogue-pagination-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.catalogue-page-size-control {
+  width: 160px;
+}
+
+.catalogue-pagination-control {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
 }
 
 .catalogue-state {
@@ -604,6 +624,20 @@ body {
 
   .catalogue-search-control {
     grid-column: auto;
+  }
+
+  .catalogue-pagination-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .catalogue-page-size-control {
+    width: 100%;
+  }
+
+  .catalogue-pagination-control {
+    overflow-x: auto;
+    justify-items: start;
   }
 
   .film-count.ant-typography {

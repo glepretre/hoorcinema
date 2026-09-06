@@ -5,6 +5,7 @@ import {
   ConfigProvider,
   Empty,
   Input,
+  Pagination,
   Select,
   Spin,
   Table,
@@ -17,7 +18,12 @@ import { useMemo, useState } from "react";
 
 import { getFilms } from "../api/films";
 import { useCatalogueStore } from "../store/catalogue";
-import type { Film, FilmOrdering, FilmStatus } from "../types/film";
+import type {
+  Film,
+  FilmOrdering,
+  FilmPageSize,
+  FilmStatus,
+} from "../types/film";
 import {
   localRating,
   posterUrl,
@@ -58,13 +64,15 @@ export function FilmCatalogue({
   const search = useCatalogueStore((state) => state.search);
   const status = useCatalogueStore((state) => state.status);
   const page = useCatalogueStore((state) => state.page);
+  const pageSize = useCatalogueStore((state) => state.pageSize);
   const setSearch = useCatalogueStore((state) => state.setSearch);
   const setStatus = useCatalogueStore((state) => state.setStatus);
   const setPage = useCatalogueStore((state) => state.setPage);
+  const setPageSize = useCatalogueStore((state) => state.setPageSize);
   const [ordering, setOrdering] = useState<FilmOrdering>("title");
   const params = useMemo(
-    () => ({ page, search: search || undefined, status, ordering }),
-    [ordering, page, search, status],
+    () => ({ page, pageSize, search: search || undefined, status, ordering }),
+    [ordering, page, pageSize, search, status],
   );
   const filmsQuery = useQuery({
     queryKey: ["films", params],
@@ -226,37 +234,71 @@ export function FilmCatalogue({
             }
           />
         ) : (
-          <Table<Film>
-            className="films-table"
-            rowKey="id"
-            columns={columns}
-            dataSource={filmsQuery.data.results}
-            locale={{
-              emptyText: (
-                <Empty description="Aucun film ne correspond à votre recherche." />
-              ),
-            }}
-            pagination={{
-              current: page,
-              pageSize: 10,
-              total: filmsQuery.data.count,
-              showSizeChanger: false,
-              hideOnSinglePage: true,
-              onChange: setPage,
-            }}
-            scroll={{ x: 560 }}
-            onRow={(film) => ({
-              onClick: () => onSelectFilm(film.id),
-              tabIndex: 0,
-              onKeyDown: (event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  onSelectFilm(film.id);
-                }
-              },
-              "aria-label": `Voir ${film.title}`,
-            })}
-          />
+          <div>
+            <Table<Film>
+              className="films-table"
+              rowKey="id"
+              columns={columns}
+              dataSource={filmsQuery.data.results}
+              locale={{
+                emptyText: (
+                  <Empty description="Aucun film ne correspond à votre recherche." />
+                ),
+              }}
+              pagination={false}
+              scroll={{ x: 560 }}
+              onRow={(film) => ({
+                onClick: () => onSelectFilm(film.id),
+                tabIndex: 0,
+                onKeyDown: (event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onSelectFilm(film.id);
+                  }
+                },
+                "aria-label": `Voir ${film.title}`,
+              })}
+            />
+            <ConfigProvider theme={catalogueControlsTheme}>
+              <div className="catalogue-pagination-bar">
+                <div className="catalogue-control catalogue-page-size-control">
+                  <label htmlFor="catalogue-page-size">Films par page</label>
+                  <Select<FilmPageSize>
+                    id="catalogue-page-size"
+                    aria-label="Nombre de films par page"
+                    value={pageSize}
+                    options={[
+                      { value: 10, label: "10 films" },
+                      { value: 50, label: "50 films" },
+                      { value: 100, label: "100 films" },
+                    ]}
+                    onChange={setPageSize}
+                  />
+                </div>
+                {filmsQuery.data.count > pageSize && (
+                  <div
+                    className="catalogue-pagination-control"
+                    role="group"
+                    aria-labelledby="catalogue-pagination-label"
+                  >
+                    <span
+                      id="catalogue-pagination-label"
+                      className="catalogue-control-label"
+                    >
+                      Pages
+                    </span>
+                    <Pagination
+                      current={page}
+                      pageSize={pageSize}
+                      total={filmsQuery.data.count}
+                      showSizeChanger={false}
+                      onChange={setPage}
+                    />
+                  </div>
+                )}
+              </div>
+            </ConfigProvider>
+          </div>
         )}
       </section>
     </main>
