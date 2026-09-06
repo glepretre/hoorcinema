@@ -144,7 +144,7 @@ export function FilmCatalogue({
         <div>
           <Text className="eyebrow">HOORCINEMA</Text>
           <Title>Films à l’affiche</Title>
-          <Paragraph>
+          <Paragraph className="text-on-dark">
             Parcourez la collection, des nouveautés aux classiques.
           </Paragraph>
         </div>

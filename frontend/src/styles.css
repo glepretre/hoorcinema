@@ -49,10 +49,13 @@ body {
 .auth-story .story-copy.ant-typography {
   max-width: 540px;
   margin: 0;
-  color: #c8bdb2;
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(16px, 1.5vw, 21px);
   line-height: 1.45;
+}
+
+.text-on-dark.ant-typography {
+  color: #c8bdb2;
 }
 
 .eyebrow.ant-typography {
@@ -172,7 +175,6 @@ body {
 
 .catalogue-header p.ant-typography {
   margin: 0;
-  color: #c8bdb2;
   font-size: 18px;
 }
 

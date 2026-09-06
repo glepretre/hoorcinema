@@ -60,6 +60,11 @@ describe("authentication screen", () => {
     renderApp();
 
     expect(
+      screen
+        .getByText(/Retrouvez les films qui vous marquent/)
+        .classList.contains("text-on-dark"),
+    ).toBe(true);
+    expect(
       screen.getByRole("heading", { name: "Créer un compte" }),
     ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Se connecter" }));

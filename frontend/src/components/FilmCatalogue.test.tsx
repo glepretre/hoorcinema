@@ -68,6 +68,11 @@ describe("film catalogue", () => {
     expect(screen.getByText("Chargement des films…")).toBeTruthy();
     expect(await screen.findByText("Cinema Paradiso")).toBeTruthy();
     expect(
+      screen
+        .getByText("Parcourez la collection, des nouveautés aux classiques.")
+        .classList.contains("text-on-dark"),
+    ).toBe(true);
+    expect(
       screen.getByAltText("Affiche de Cinema Paradiso").getAttribute("src"),
     ).toBe("https://image.tmdb.org/t/p/w185/cinema-paradiso.jpg");
     expect(

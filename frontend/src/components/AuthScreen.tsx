@@ -50,7 +50,7 @@ export function AuthScreen() {
       <section className="auth-story" aria-labelledby="brand-title">
         <Text className="eyebrow">VOTRE CINÉMATHÈQUE</Text>
         <Title id="brand-title">Hoorcinema</Title>
-        <Paragraph className="story-copy">
+        <Paragraph className="story-copy text-on-dark">
           Retrouvez les films qui vous marquent. Notez-les, gardez vos favoris
           et composez une collection à votre image.
         </Paragraph>
