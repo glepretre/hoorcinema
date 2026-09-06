@@ -525,7 +525,56 @@ body {
 
 .detail-ratings > div {
   display: grid;
+  justify-items: start;
   gap: 4px;
+}
+
+.rating-trigger.ant-btn {
+  height: auto;
+  margin-top: 5px;
+  padding: 2px 9px;
+  border-color: rgb(226 116 80 / 48%);
+  color: #f0a085;
+  background: rgb(216 91 54 / 10%);
+  font-size: 12px;
+}
+
+.rating-trigger.ant-btn:hover {
+  border-color: #e27450;
+  color: #ffd4c5;
+  background: rgb(216 91 54 / 18%);
+}
+
+.rating-popover-content {
+  display: grid;
+  min-width: 150px;
+  gap: 10px;
+  padding: 4px;
+}
+
+.rating-popover .ant-popover-container,
+.rating-popover .ant-popover-arrow::before {
+  background: #2b2826;
+}
+
+.rating-popover-content .ant-typography {
+  color: #f5efe4;
+}
+
+.rating-popover-content .ant-rate {
+  color: #d85b36;
+  font-size: 26px;
+}
+
+.rating-popover-content .ant-rate-star-zero .ant-rate-star-first,
+.rating-popover-content .ant-rate-star-zero .ant-rate-star-second,
+.rating-popover-content .ant-rate-star-zero svg {
+  color: #c2bcb7;
+  fill: currentcolor;
+}
+
+.rating-popover-content .ant-alert {
+  max-width: 280px;
 }
 
 .rating-value.ant-typography {
@@ -576,8 +625,9 @@ body {
   gap: 11px;
 }
 
-.author-card > div {
+.author-copy {
   display: grid;
+  justify-items: start;
 }
 
 .author-name.ant-typography {

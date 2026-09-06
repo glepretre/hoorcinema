@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { ApiError } from "../api/client";
 import { archiveFilm, getFilm, unarchiveFilm } from "../api/films";
+import { rateAuthor, rateFilm } from "../api/ratings";
 import { canChangeFilmFromToken, useAuthStore } from "../store/auth";
 import { localRating, posterUrl, statusLabels } from "./filmPresentation";
+import { RatingPopover } from "./RatingPopover";
 
 const { Paragraph, Text, Title } = Typography;
 
@@ -137,6 +139,12 @@ export function FilmDetail({
 
   const film = filmQuery.data;
   const imageUrl = posterUrl(film.poster_path, "w500");
+  const handleRated = (subject: string, score: number) => {
+    setSuccessToast(`${subject} noté ${score} / 5`);
+    void queryClient.invalidateQueries({
+      queryKey: ["films", "detail", filmId],
+    });
+  };
 
   return (
     <main className="film-detail-page">
@@ -236,6 +244,11 @@ export function FilmDetail({
                 {localRating(film.local_rating)}
               </Text>
               <Text className="rating-label">Note Hoorcinema</Text>
+              <RatingPopover
+                label={`Noter ${film.title}`}
+                onRate={(score) => rateFilm(film.id, score)}
+                onRated={(score) => handleRated("Film", score)}
+              />
             </div>
             <div>
               <Text className="rating-value">
@@ -280,11 +293,16 @@ export function FilmDetail({
                     <Avatar src={author.avatar || undefined}>
                       {authorName(author).slice(0, 1).toUpperCase()}
                     </Avatar>
-                    <div>
+                    <div className="author-copy">
                       <Text className="author-name">{authorName(author)}</Text>
                       <Text className="author-rating">
                         {localRating(author.local_rating)}
                       </Text>
+                      <RatingPopover
+                        label={`Noter ${authorName(author)}`}
+                        onRate={(score) => rateAuthor(author.id, score)}
+                        onRated={(score) => handleRated("Auteur", score)}
+                      />
                     </div>
                   </div>
                 ))}

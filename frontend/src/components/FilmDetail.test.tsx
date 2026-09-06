@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { ApiError } from "../api/client";
 import * as filmsApi from "../api/films";
+import * as ratingsApi from "../api/ratings";
 import { useAuthStore } from "../store/auth";
 import type { Film } from "../types/film";
 import { FilmDetail } from "./FilmDetail";
@@ -18,6 +19,11 @@ vi.mock("../api/films", () => ({
   archiveFilm: vi.fn(),
   getFilm: vi.fn(),
   unarchiveFilm: vi.fn(),
+}));
+
+vi.mock("../api/ratings", () => ({
+  rateAuthor: vi.fn(),
+  rateFilm: vi.fn(),
 }));
 
 const film: Film = {
@@ -86,6 +92,16 @@ beforeEach(() => {
     ...film,
     is_archived: false,
   });
+  vi.mocked(ratingsApi.rateFilm).mockResolvedValue({
+    id: 1,
+    film: 7,
+    score: 4,
+  });
+  vi.mocked(ratingsApi.rateAuthor).mockResolvedValue({
+    id: 2,
+    author: 2,
+    score: 5,
+  });
 });
 
 afterEach(() => {
@@ -122,6 +138,47 @@ describe("film detail", () => {
     );
 
     expect(onBack).toHaveBeenCalledOnce();
+  });
+
+  test("rates the film from its rating popover", async () => {
+    renderDetail();
+    await screen.findByRole("heading", { name: "Cinema Paradiso" });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Noter Cinema Paradiso" }),
+    );
+    expect(await screen.findByText("Noter Cinema Paradiso")).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("radio")[3]);
+
+    await waitFor(() => expect(ratingsApi.rateFilm).toHaveBeenCalledWith(7, 4));
+    expect(await screen.findByText("Film noté 4 / 5")).toBeTruthy();
+    expect(
+      screen.getByRole("button", {
+        name: "Noter Cinema Paradiso, note actuelle 4 sur 5",
+      }),
+    ).toBeTruthy();
+    await waitFor(() => expect(filmsApi.getFilm).toHaveBeenCalledTimes(2));
+  });
+
+  test("rates an author from their card", async () => {
+    renderDetail();
+    await screen.findByRole("heading", { name: "Cinema Paradiso" });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Noter Giuseppe Tornatore" }),
+    );
+    expect(await screen.findByText("Noter Giuseppe Tornatore")).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("radio")[4]);
+
+    await waitFor(() =>
+      expect(ratingsApi.rateAuthor).toHaveBeenCalledWith(2, 5),
+    );
+    expect(await screen.findByText("Auteur noté 5 / 5")).toBeTruthy();
+    expect(
+      screen.getByRole("button", {
+        name: "Noter Giuseppe Tornatore, note actuelle 5 sur 5",
+      }),
+    ).toBeTruthy();
   });
 
   test("uses the provided archived catalogue return label", async () => {
