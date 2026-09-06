@@ -100,7 +100,7 @@ describe("authentication screen", () => {
     });
   });
 
-  test("logs in and logs out while clearing the in-memory session", async () => {
+  test("logs in and logs out while clearing the persisted session", async () => {
     vi.mocked(authApi.login).mockImplementation(async () => {
       useAuthStore
         .getState()

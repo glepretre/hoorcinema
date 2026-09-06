@@ -48,7 +48,7 @@ describe("authentication API", () => {
     );
   });
 
-  test("trims the login username and keeps tokens in memory", async () => {
+  test("trims the login username and persists tokens", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(
@@ -72,7 +72,13 @@ describe("authentication API", () => {
         refreshToken: "refresh-token",
       }),
     );
-    expect(localStorage).toHaveLength(0);
+    expect(JSON.parse(localStorage.getItem("hoorcinema-auth") ?? "")).toEqual({
+      state: {
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+      },
+      version: 0,
+    });
     expect(sessionStorage).toHaveLength(0);
   });
 
@@ -87,5 +93,9 @@ describe("authentication API", () => {
     await expect(logout()).resolves.toBeUndefined();
     expect(useAuthStore.getState().accessToken).toBeNull();
     expect(useAuthStore.getState().refreshToken).toBeNull();
+    expect(JSON.parse(localStorage.getItem("hoorcinema-auth") ?? "")).toEqual({
+      state: { accessToken: null, refreshToken: null },
+      version: 0,
+    });
   });
 });
