@@ -27,16 +27,18 @@ The backend waits for PostgreSQL, applies migrations, and starts Django. Create 
 docker compose exec backend uv run python manage.py createsuperuser
 ```
 
-Create the demo author, spectator, and administrator with passwords configured in
-`.env`:
+Create the static 18-film TMDB demo catalogue, its linked authors, and the demo
+author, spectator, and administrator with passwords configured in `.env`:
 
 ```bash
 docker compose exec backend uv run python manage.py seed_demo_data
 ```
 
 The required variables are `DEMO_AUTHOR_PASSWORD`, `DEMO_SPECTATOR_PASSWORD`, and
-`DEMO_ADMIN_PASSWORD`. The command is idempotent and uses the usernames
-`demo_author`, `demo_spectator`, and `demo_admin`.
+`DEMO_ADMIN_PASSWORD`. The command is idempotent, reconciles TMDB records to the
+static catalogue, and uses the usernames `demo_author`, `demo_spectator`, and
+`demo_admin`. The `demo_author` account remains available with the author role even
+though the TMDB films are linked only to their imported authors.
 
 Import popular films and their directors and writers from TMDb after setting
 `TMDB_API_TOKEN` in `.env`:
