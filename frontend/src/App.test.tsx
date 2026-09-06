@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import App from "./App";
 import * as authApi from "./api/auth";
+import * as filmsApi from "./api/films";
 import { useAuthStore } from "./store/auth";
 
 vi.mock("./api/auth", async (importOriginal) => {
@@ -21,6 +22,8 @@ vi.mock("./api/auth", async (importOriginal) => {
     logout: vi.fn(),
   };
 });
+
+vi.mock("./api/films", () => ({ getFilms: vi.fn() }));
 
 function renderApp() {
   const queryClient = new QueryClient({
@@ -39,6 +42,12 @@ function renderApp() {
 
 beforeEach(() => {
   useAuthStore.getState().clearTokens();
+  vi.mocked(filmsApi.getFilms).mockResolvedValue({
+    count: 0,
+    next: null,
+    previous: null,
+    results: [],
+  });
 });
 
 afterEach(() => {
@@ -120,9 +129,7 @@ describe("authentication screen", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Se connecter" }));
 
-    await screen.findByRole("heading", {
-      name: "Votre séance peut commencer.",
-    });
+    await screen.findByRole("heading", { name: "Films à l’affiche" });
     fireEvent.click(screen.getByRole("button", { name: "Se déconnecter" }));
 
     await screen.findByRole("heading", { name: "Créer un compte" });
