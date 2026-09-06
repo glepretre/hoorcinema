@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import type { FilmStatus } from "../types/film";
 
 const POSTER_BASE_URL = "https://image.tmdb.org/t/p";
@@ -11,13 +13,37 @@ export const statusLabels: Record<FilmStatus, string> = {
   Canceled: "Annulé",
 };
 
-export const statusColors: Record<FilmStatus, string> = {
-  Rumored: "purple",
-  Planned: "blue",
-  "In Production": "cyan",
-  "Post Production": "geekblue",
-  Released: "green",
-  Canceled: "default",
+export const statusTagStyles: Record<FilmStatus, CSSProperties> = {
+  Rumored: {
+    color: "#705d68",
+    background: "#ebe3e7",
+    borderColor: "#d2c4cb",
+  },
+  Planned: {
+    color: "#665f57",
+    background: "#e9e4dc",
+    borderColor: "#cfc4b8",
+  },
+  "In Production": {
+    color: "#7d4635",
+    background: "#ead7ce",
+    borderColor: "#cda996",
+  },
+  "Post Production": {
+    color: "#824c3a",
+    background: "#eddbd2",
+    borderColor: "#d2ad9c",
+  },
+  Released: {
+    color: "#5f574f",
+    background: "#ded6cc",
+    borderColor: "#bfb2a5",
+  },
+  Canceled: {
+    color: "#746b63",
+    background: "#e3ddd5",
+    borderColor: "#c8bdb2",
+  },
 };
 
 export function posterUrl(

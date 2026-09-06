@@ -28,8 +28,8 @@ import {
   localRating,
   posterUrl,
   releaseYear,
-  statusColors,
   statusLabels,
+  statusTagStyles,
 } from "./filmPresentation";
 
 const { Paragraph, Text, Title } = Typography;
@@ -140,7 +140,9 @@ export function FilmCatalogue({
         width: 170,
         responsive: ["sm"],
         render: (filmStatus: FilmStatus) => (
-          <Tag color={statusColors[filmStatus]}>{statusLabels[filmStatus]}</Tag>
+          <Tag style={statusTagStyles[filmStatus]}>
+            {statusLabels[filmStatus]}
+          </Tag>
         ),
       },
     ],
