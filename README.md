@@ -2,6 +2,32 @@
 
 Hoorcinema is a Django REST Framework and React application backed by PostgreSQL.
 
+## Screenshots
+
+### Anonymous home
+
+![Hoorcinema anonymous home on desktop](docs/screenshots/anonymous-home-desktop-1920.png)
+
+### Authenticated film catalogue
+
+![Hoorcinema authenticated film catalogue on desktop](docs/screenshots/authenticated-films-desktop-1920.png)
+
+### Authenticated film details
+
+![Hoorcinema authenticated film details on desktop](docs/screenshots/authenticated-film-34-desktop-1920.png)
+
+### Mobile views
+
+| Anonymous home | Authenticated catalogue | Authenticated film details |
+| --- | --- | --- |
+| ![Anonymous home on mobile](docs/screenshots/anonymous-home-mobile-390.png) | ![Authenticated film catalogue on mobile](docs/screenshots/authenticated-films-mobile-390.png) | ![Authenticated film details on mobile](docs/screenshots/authenticated-film-34-mobile-390.png) |
+
+### Administration
+
+| Django film administration |
+| --- |
+| ![Django film administration on desktop](docs/screenshots/admin-film-list-desktop-1920.png) |
+
 ## Requirements
 
 - Docker with Docker Compose
