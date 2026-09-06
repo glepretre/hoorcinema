@@ -43,7 +43,7 @@ def test_registration_validates_password_and_unique_username():
     )
     duplicate = client.post(
         reverse("auth-register"),
-        {"username": "existing", "password": "Secure-test-password-42"},
+        {"username": "EXISTING", "password": "Secure-test-password-42"},
         format="json",
     )
 
@@ -74,6 +74,18 @@ def login(client, spectator):
 @pytest.mark.django_db
 def test_login_returns_access_and_refresh_tokens(spectator):
     response = login(APIClient(), spectator)
+
+    assert response.status_code == 200
+    assert set(response.json()) == {"access", "refresh"}
+
+
+@pytest.mark.django_db
+def test_login_username_is_case_insensitive(spectator):
+    response = APIClient().post(
+        reverse("auth-login"),
+        {"username": "VIEWER", "password": "Secure-test-password-42"},
+        format="json",
+    )
 
     assert response.status_code == 200
     assert set(response.json()) == {"access", "refresh"}

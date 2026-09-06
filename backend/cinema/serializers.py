@@ -174,6 +174,13 @@ class SpectatorRegistrationSerializer(serializers.ModelSerializer):
         validate_password(value, candidate)
         return value
 
+    def validate_username(self, value):
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError(
+                "A user with that username already exists."
+            )
+        return value
+
     @transaction.atomic
     def create(self, validated_data):
         password = validated_data.pop("password")

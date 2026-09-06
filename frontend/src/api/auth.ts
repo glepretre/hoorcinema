@@ -26,16 +26,24 @@ interface TokenPair {
 export function registerSpectator(
   data: RegistrationData,
 ): Promise<RegistrationResponse> {
+  const normalizedData = {
+    ...data,
+    username: data.username.trim(),
+    email: data.email.trim(),
+    first_name: data.first_name.trim(),
+    last_name: data.last_name.trim(),
+  };
+
   return apiRequest("/api/auth/register/", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(normalizedData),
   });
 }
 
 export async function login(data: LoginData): Promise<void> {
   const tokens = await apiRequest<TokenPair>("/api/auth/login/", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...data, username: data.username.trim() }),
   });
   useAuthStore.getState().setTokens(tokens);
 }

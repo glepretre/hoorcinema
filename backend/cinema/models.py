@@ -2,10 +2,11 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models.functions import Lower
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 
-from cinema.managers import AuthorManager, SpectatorManager
+from cinema.managers import AuthorManager, CinemaUserManager, SpectatorManager
 from cinema.roles import AUTHOR_GROUP, SPECTATOR_GROUP
 
 
@@ -24,6 +25,15 @@ class User(AbstractUser):
         max_length=10,
     )
     tmdb_id = models.PositiveBigIntegerField(blank=True, null=True, unique=True)
+    objects = CinemaUserManager()
+
+    class Meta(AbstractUser.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                Lower("username"),
+                name="unique_user_username_ci",
+            )
+        ]
 
 
 class Author(User):

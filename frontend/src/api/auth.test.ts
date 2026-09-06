@@ -19,33 +19,53 @@ afterEach(() => {
 });
 
 describe("authentication API", () => {
-  test("sends registration data to the spectator endpoint", async () => {
+  test("trims profile fields before registration", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(jsonResponse({ id: 4, username: "viewer" }, 201));
     const data = {
-      username: "viewer",
-      email: "viewer@example.com",
-      first_name: "Cinema",
-      last_name: "Viewer",
-      password: "Secure-password-42",
+      username: "  viewer  ",
+      email: " viewer@example.com ",
+      first_name: " Cinema ",
+      last_name: " Viewer ",
+      password: " Secure-password-42 ",
     };
 
     await registerSpectator(data);
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/auth/register/",
-      expect.objectContaining({ method: "POST", body: JSON.stringify(data) }),
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          username: "viewer",
+          email: "viewer@example.com",
+          first_name: "Cinema",
+          last_name: "Viewer",
+          password: " Secure-password-42 ",
+        }),
+      }),
     );
   });
 
-  test("keeps login tokens in memory", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      jsonResponse({ access: "access-token", refresh: "refresh-token" }),
+  test("trims the login username and keeps tokens in memory", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        jsonResponse({ access: "access-token", refresh: "refresh-token" }),
+      );
+
+    await login({ username: "  Viewer  ", password: " Secure-password-42 " });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/auth/login/",
+      expect.objectContaining({
+        body: JSON.stringify({
+          username: "Viewer",
+          password: " Secure-password-42 ",
+        }),
+      }),
     );
-
-    await login({ username: "viewer", password: "Secure-password-42" });
-
     expect(useAuthStore.getState()).toEqual(
       expect.objectContaining({
         accessToken: "access-token",

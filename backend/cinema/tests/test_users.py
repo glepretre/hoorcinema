@@ -1,6 +1,7 @@
 import pytest
 from django.contrib import admin
 from django.contrib.auth.models import Group
+from django.db import IntegrityError
 from django.test import RequestFactory
 
 from cinema.admin import AuthorAdmin, CinemaUserAdmin, SpectatorAdmin
@@ -45,6 +46,14 @@ def test_roles_are_cumulative_and_proxy_managers_filter_users():
     assert isinstance(Spectator.objects.get(pk=both_roles.pk), Spectator)
     assert no_role not in Author.objects.all()
     assert no_role not in Spectator.objects.all()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_usernames_are_unique_regardless_of_case():
+    User.objects.create_user(username="Viewer")
+
+    with pytest.raises(IntegrityError):
+        User.objects.create_user(username="viewer")
 
 
 def test_specialized_user_models_are_registered_in_admin():
