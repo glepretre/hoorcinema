@@ -12,7 +12,13 @@ import { ApiError } from "../api/client";
 
 const { Paragraph, Text, Title } = Typography;
 
-type AuthMode = "register" | "login";
+export type AuthMode = "register" | "login";
+
+interface AuthScreenProps {
+  mode: AuthMode;
+  onLogin: () => void;
+  onModeChange: (mode: AuthMode) => void;
+}
 
 function errorMessage(error: Error): string {
   if (error instanceof ApiError && error.status === 401) {
@@ -24,16 +30,15 @@ function errorMessage(error: Error): string {
   return "Impossible de contacter le service. Réessayez dans un instant.";
 }
 
-export function AuthScreen() {
-  const [mode, setMode] = useState<AuthMode>("register");
+export function AuthScreen({ mode, onLogin, onModeChange }: AuthScreenProps) {
   const [registered, setRegistered] = useState(false);
   const registerMutation = useMutation({ mutationFn: registerSpectator });
-  const loginMutation = useMutation({ mutationFn: login });
+  const loginMutation = useMutation({ mutationFn: login, onSuccess: onLogin });
   const isRegister = mode === "register";
   const activeMutation = isRegister ? registerMutation : loginMutation;
 
   function changeMode(nextMode: AuthMode) {
-    setMode(nextMode);
+    onModeChange(nextMode);
     setRegistered(false);
     registerMutation.reset();
     loginMutation.reset();
@@ -42,7 +47,7 @@ export function AuthScreen() {
   async function submitRegistration(values: RegistrationData) {
     await registerMutation.mutateAsync(values);
     setRegistered(true);
-    setMode("login");
+    onModeChange("login");
   }
 
   return (

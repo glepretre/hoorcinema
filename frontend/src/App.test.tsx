@@ -192,11 +192,21 @@ describe("authentication screen", () => {
       screen.getByRole("heading", { name: "Créer un compte" }),
     ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Se connecter" }));
+    expect(location.pathname).toBe("/login/");
     expect(screen.getByRole("heading", { name: "Se connecter" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "S’inscrire" }));
+    expect(location.pathname).toBe("/");
     expect(
       screen.getByRole("heading", { name: "Créer un compte" }),
     ).toBeTruthy();
+  });
+
+  test("loads the login form directly from its URL", () => {
+    history.replaceState(null, "", "/login/");
+
+    renderApp();
+
+    expect(screen.getByRole("heading", { name: "Se connecter" })).toBeTruthy();
   });
 
   test("registers a spectator then opens the login form", async () => {
@@ -229,6 +239,7 @@ describe("authentication screen", () => {
     await screen.findByText(
       "Votre compte a été créé. Vous pouvez maintenant vous connecter.",
     );
+    expect(location.pathname).toBe("/login/");
     expect(vi.mocked(authApi.registerSpectator).mock.calls[0]?.[0]).toEqual({
       username: "viewer",
       email: "viewer@example.com",
@@ -262,7 +273,8 @@ describe("authentication screen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Mon compte" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Se déconnecter" }));
 
-    await screen.findByRole("heading", { name: "Créer un compte" });
+    await screen.findByRole("heading", { name: "Se connecter" });
+    expect(location.pathname).toBe("/login/");
     expect(useAuthStore.getState().accessToken).toBeNull();
   });
 
