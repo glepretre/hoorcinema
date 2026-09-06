@@ -65,6 +65,9 @@ describe("film catalogue", () => {
   test("renders films with poster thumbnails and selects an accessible row", async () => {
     renderCatalogue();
 
+    expect(screen.getByText("Recherche", { selector: "label" })).toBeTruthy();
+    expect(screen.getByText("Statut", { selector: "label" })).toBeTruthy();
+    expect(screen.getByText("Trier par", { selector: "label" })).toBeTruthy();
     expect(screen.getByText("Chargement des films…")).toBeTruthy();
     expect(await screen.findByText("Cinema Paradiso")).toBeTruthy();
     expect(

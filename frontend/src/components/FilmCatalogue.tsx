@@ -189,40 +189,52 @@ export function FilmCatalogue({
 
         <ConfigProvider theme={catalogueControlsTheme}>
           <div className="catalogue-controls">
-            <Input.Search
-              aria-label="Rechercher un film"
-              allowClear
-              defaultValue={search}
-              enterButton="Rechercher"
-              placeholder="Titre du film"
-              onSearch={setSearch}
-            />
-            <Select<FilmStatus | undefined>
-              aria-label="Filtrer par statut"
-              allowClear
-              placeholder="Tous les statuts"
-              value={status}
-              options={Object.entries(statusLabels).map(([value, label]) => ({
-                value: value as FilmStatus,
-                label,
-              }))}
-              onChange={setStatus}
-            />
-            <Select<FilmOrdering>
-              aria-label="Trier les films"
-              value={ordering}
-              options={[
-                { value: "title", label: "Titre (A–Z)" },
-                { value: "-release_date", label: "Sortie (plus récente)" },
-                { value: "release_date", label: "Sortie (plus ancienne)" },
-                { value: "-local_rating", label: "Note (meilleure)" },
-                { value: "local_rating", label: "Note (moins bonne)" },
-              ]}
-              onChange={(value) => {
-                setOrdering(value);
-                setPage(1);
-              }}
-            />
+            <div className="catalogue-control catalogue-search-control">
+              <label htmlFor="catalogue-search">Recherche</label>
+              <Input.Search
+                id="catalogue-search"
+                aria-label="Rechercher un film"
+                allowClear
+                defaultValue={search}
+                enterButton="Rechercher"
+                placeholder="Titre du film"
+                onSearch={setSearch}
+              />
+            </div>
+            <div className="catalogue-control">
+              <label htmlFor="catalogue-status">Statut</label>
+              <Select<FilmStatus | undefined>
+                id="catalogue-status"
+                aria-label="Filtrer par statut"
+                allowClear
+                placeholder="Tous les statuts"
+                value={status}
+                options={Object.entries(statusLabels).map(([value, label]) => ({
+                  value: value as FilmStatus,
+                  label,
+                }))}
+                onChange={setStatus}
+              />
+            </div>
+            <div className="catalogue-control">
+              <label htmlFor="catalogue-ordering">Trier par</label>
+              <Select<FilmOrdering>
+                id="catalogue-ordering"
+                aria-label="Trier les films"
+                value={ordering}
+                options={[
+                  { value: "title", label: "Titre (A–Z)" },
+                  { value: "-release_date", label: "Sortie (plus récente)" },
+                  { value: "release_date", label: "Sortie (plus ancienne)" },
+                  { value: "-local_rating", label: "Note (meilleure)" },
+                  { value: "local_rating", label: "Note (moins bonne)" },
+                ]}
+                onChange={(value) => {
+                  setOrdering(value);
+                  setPage(1);
+                }}
+              />
+            </div>
           </div>
         </ConfigProvider>
 

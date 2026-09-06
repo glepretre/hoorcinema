@@ -223,6 +223,20 @@ body {
   margin-bottom: 24px;
 }
 
+.catalogue-control {
+  display: grid;
+  gap: 6px;
+}
+
+.catalogue-control > label {
+  padding-left: 4px;
+  color: #746b63;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .catalogue-controls .ant-input,
 .catalogue-controls .ant-input-affix-wrapper,
 .catalogue-controls .ant-select-selector {
@@ -325,7 +339,7 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 
-  .catalogue-controls .ant-input-search {
+  .catalogue-search-control {
     grid-column: 1 / -1;
   }
 }
@@ -371,7 +385,7 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .catalogue-controls .ant-input-search {
+  .catalogue-search-control {
     grid-column: auto;
   }
 
