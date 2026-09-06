@@ -47,9 +47,10 @@ docker compose exec backend uv run python manage.py import_tmdb --limit 20 --pag
 
 The command updates imported records by TMDb ID and preserves local ratings and
 favorites. Imported films are published, and imported people receive unusable
-passwords. Use `--movie-id ID` for one film, `--language en-US` to select the
-TMDb language, or `--dry-run` to validate an import without saving it. Local
-records that conflict with a TMDb ID are never overwritten.
+passwords. French (`fr-FR`) is used by default, with missing localized fields
+filled from English (`en-US`). Use `--movie-id ID` for one film,
+`--language en-US` to force English, or `--dry-run` to validate an import without
+saving it. Local records that conflict with a TMDb ID are never overwritten.
 
 ## Tests and quality checks
 

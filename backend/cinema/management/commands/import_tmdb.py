@@ -12,6 +12,9 @@ from cinema.tmdb import TMDbClient, TMDbError
 
 AUTHOR_JOBS = {"Director", "Screenplay", "Writer"}
 IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
+DEFAULT_LANGUAGE = "fr-FR"
+FALLBACK_LANGUAGE = "en-US"
+LOCALIZED_DETAIL_FIELDS = ("title", "overview")
 
 
 def positive_integer(value):
@@ -35,7 +38,7 @@ class Command(BaseCommand):
         parser.add_argument("--limit", type=positive_integer, default=20)
         parser.add_argument("--page", type=positive_integer, default=1)
         parser.add_argument("--movie-id", type=positive_integer)
-        parser.add_argument("--language", default="en-US")
+        parser.add_argument("--language", default=DEFAULT_LANGUAGE)
         parser.add_argument("--dry-run", action="store_true")
 
     def handle(self, *args, **options):
@@ -68,8 +71,8 @@ class Command(BaseCommand):
 
         for current_movie_id in movie_ids:
             try:
-                details = client.get_movie_details(
-                    current_movie_id, language=options["language"]
+                details = self._get_movie_details(
+                    client, current_movie_id, language=options["language"]
                 )
                 credits = client.get_movie_credits(
                     current_movie_id, language=options["language"]
@@ -86,6 +89,29 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(f"{prefix}TMDb import complete: {summary}.")
         )
+
+    @staticmethod
+    def _get_movie_details(client, movie_id, *, language):
+        details = client.get_movie_details(movie_id, language=language)
+        if language == FALLBACK_LANGUAGE or not isinstance(details, dict):
+            return details
+        if all(details.get(field) for field in LOCALIZED_DETAIL_FIELDS):
+            return details
+
+        fallback = client.get_movie_details(movie_id, language=FALLBACK_LANGUAGE)
+        if not isinstance(fallback, dict):
+            raise TMDbError("TMDb returned invalid fallback movie data.")
+
+        merged = fallback.copy()
+        merged.update(
+            {
+                key: value
+                for key, value in details.items()
+                if value is not None
+                and (not isinstance(value, str) or value.strip())
+            }
+        )
+        return merged
 
     def _import_movie(self, details, credits, dry_run):
         if not isinstance(details, dict) or not isinstance(credits, dict):

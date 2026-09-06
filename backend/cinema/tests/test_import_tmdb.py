@@ -94,6 +94,28 @@ def test_import_tmdb_creates_films_and_authors():
 
 
 @pytest.mark.django_db
+def test_import_tmdb_defaults_to_french_and_falls_back_field_by_field(monkeypatch):
+    french_movie = {**MOVIE, "title": "Film distant", "overview": ""}
+    english_movie = {**MOVIE, "title": "Remote Film", "overview": "English overview."}
+
+    def get_movie_details(self, movie_id, *, language):
+        self.calls.append(("details", movie_id, language))
+        return deepcopy(french_movie if language == "fr-FR" else english_movie)
+
+    monkeypatch.setattr(FakeClient, "get_movie_details", get_movie_details)
+
+    call_command("import_tmdb")
+
+    film = Film.objects.get(tmdb_id=42)
+    assert film.title == "Film distant"
+    assert film.description == "English overview."
+    assert ("list", 1, "fr-FR") in FakeClient.calls
+    assert ("details", 42, "fr-FR") in FakeClient.calls
+    assert ("details", 42, "en-US") in FakeClient.calls
+    assert ("credits", 42, "fr-FR") in FakeClient.calls
+
+
+@pytest.mark.django_db
 def test_import_tmdb_is_idempotent_and_preserves_local_data():
     call_command("import_tmdb")
     film = Film.objects.get(tmdb_id=42)
