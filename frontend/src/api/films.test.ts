@@ -1,6 +1,11 @@
 import { describe, expect, test, vi } from "vitest";
 
-import { buildFilmListPath, getFilm } from "./films";
+import {
+  archiveFilm,
+  buildFilmListPath,
+  getFilm,
+  unarchiveFilm,
+} from "./films";
 import { apiRequest } from "./client";
 
 vi.mock("./client", () => ({ apiRequest: vi.fn() }));
@@ -37,5 +42,17 @@ describe("film API", () => {
     getFilm(42);
 
     expect(apiRequest).toHaveBeenCalledWith("/api/films/42/");
+  });
+
+  test.each([
+    [archiveFilm, "/api/films/42/archive/"],
+    [unarchiveFilm, "/api/films/42/unarchive/"],
+  ])("sends an authenticated archival mutation", (mutateFilm, path) => {
+    mutateFilm(42);
+
+    expect(apiRequest).toHaveBeenCalledWith(path, {
+      method: "PATCH",
+      authenticated: true,
+    });
   });
 });

@@ -1,13 +1,24 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { ApiError } from "../api/client";
 import * as filmsApi from "../api/films";
+import { useAuthStore } from "../store/auth";
 import type { Film } from "../types/film";
 import { FilmDetail } from "./FilmDetail";
 
-vi.mock("../api/films", () => ({ getFilm: vi.fn() }));
+vi.mock("../api/films", () => ({
+  archiveFilm: vi.fn(),
+  getFilm: vi.fn(),
+  unarchiveFilm: vi.fn(),
+}));
 
 const film: Film = {
   id: 7,
@@ -50,8 +61,31 @@ function renderDetail(onBack = vi.fn(), backLabel?: string) {
   return onBack;
 }
 
+function accessToken(canChangeFilm: boolean): string {
+  return `header.${btoa(JSON.stringify({ can_change_film: canChangeFilm }))}.signature`;
+}
+
+async function confirmAction(name: "Archiver" | "Désarchiver") {
+  fireEvent.click(screen.getByRole("button", { name }));
+  await screen.findByText(`${name} ce film ?`);
+  const buttons = screen.getAllByRole("button", { name });
+  fireEvent.click(buttons[buttons.length - 1]);
+}
+
 beforeEach(() => {
+  useAuthStore.getState().setTokens({
+    access: accessToken(true),
+    refresh: "refresh-token",
+  });
   vi.mocked(filmsApi.getFilm).mockResolvedValue(film);
+  vi.mocked(filmsApi.archiveFilm).mockResolvedValue({
+    ...film,
+    is_archived: true,
+  });
+  vi.mocked(filmsApi.unarchiveFilm).mockResolvedValue({
+    ...film,
+    is_archived: false,
+  });
 });
 
 afterEach(() => {
@@ -119,5 +153,129 @@ describe("film detail", () => {
       await screen.findByText("Impossible de charger le film."),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Réessayer" })).toBeTruthy();
+  });
+
+  test("hides archival actions without the film change capability", async () => {
+    useAuthStore.getState().setTokens({
+      access: accessToken(false),
+      refresh: "refresh-token",
+    });
+    renderDetail();
+
+    await screen.findByRole("heading", { name: "Cinema Paradiso" });
+
+    expect(screen.queryByRole("button", { name: "Archiver" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Désarchiver" })).toBeNull();
+  });
+
+  test("confirms archival, invalidates film caches, and offers unarchival", async () => {
+    const invalidateQueries = vi.spyOn(
+      QueryClient.prototype,
+      "invalidateQueries",
+    );
+    const setTimeoutSpy = vi.spyOn(window, "setTimeout");
+    renderDetail();
+    await screen.findByRole("heading", { name: "Cinema Paradiso" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Archiver" }));
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+    expect(document.querySelector(".ant-modal-centered")).toBeTruthy();
+    const confirmationButtons = screen.getAllByRole("button", {
+      name: "Archiver",
+    });
+    fireEvent.click(confirmationButtons[confirmationButtons.length - 1]);
+
+    await waitFor(() => expect(filmsApi.archiveFilm).toHaveBeenCalledWith(7));
+    expect(await screen.findByText("Film archivé")).toBeTruthy();
+    expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 4_000);
+    expect(screen.getByRole("button", { name: "Désarchiver" })).toBeTruthy();
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["films"],
+      refetchType: "none",
+    });
+  });
+
+  test("confirms unarchival for an archived film", async () => {
+    vi.mocked(filmsApi.getFilm).mockResolvedValue({
+      ...film,
+      is_archived: true,
+    });
+    renderDetail();
+    await screen.findByRole("heading", { name: "Cinema Paradiso" });
+
+    await confirmAction("Désarchiver");
+
+    await waitFor(() => expect(filmsApi.unarchiveFilm).toHaveBeenCalledWith(7));
+    expect(await screen.findByText("Film désarchivé")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Archiver" })).toBeTruthy();
+  });
+
+  test("does not archive when confirmation is cancelled", async () => {
+    renderDetail();
+    await screen.findByRole("heading", { name: "Cinema Paradiso" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Archiver" }));
+    await screen.findByText("Archiver ce film ?");
+    fireEvent.click(screen.getByRole("button", { name: "Annuler" }));
+
+    expect(filmsApi.archiveFilm).not.toHaveBeenCalled();
+  });
+
+  test("prevents another action while archival is pending", async () => {
+    let resolveArchive: (value: Film) => void = () => undefined;
+    vi.mocked(filmsApi.archiveFilm).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveArchive = resolve;
+        }),
+    );
+    renderDetail();
+    await screen.findByRole("heading", { name: "Cinema Paradiso" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Archiver" }));
+    await screen.findByText("Archiver ce film ?");
+    const actions = screen.getAllByRole("button", { name: "Archiver" });
+    const action = actions[0];
+    const confirmation = actions[actions.length - 1];
+    fireEvent.click(confirmation);
+    fireEvent.click(confirmation);
+
+    await waitFor(() => expect(action.hasAttribute("disabled")).toBe(true));
+    expect(filmsApi.archiveFilm).toHaveBeenCalledOnce();
+    resolveArchive({ ...film, is_archived: true });
+    expect(await screen.findByText("Film archivé")).toBeTruthy();
+  });
+
+  test("shows a dedicated authorization error", async () => {
+    vi.mocked(filmsApi.archiveFilm).mockRejectedValue(
+      new ApiError(403, { detail: "Forbidden." }),
+    );
+    renderDetail();
+    await screen.findByRole("heading", { name: "Cinema Paradiso" });
+
+    await confirmAction("Archiver");
+
+    expect(await screen.findByText("Action impossible")).toBeTruthy();
+    expect(
+      screen.getByText("Vous n’avez pas l’autorisation d’archiver ce film."),
+    ).toBeTruthy();
+  });
+
+  test.each([
+    [401, "Votre session a expiré. Reconnectez-vous pour continuer."],
+    [
+      500,
+      "Impossible d’archiver ce film. Vérifiez votre connexion puis réessayez.",
+    ],
+  ])("shows the expected error for status %s", async (status, message) => {
+    vi.mocked(filmsApi.archiveFilm).mockRejectedValue(
+      new ApiError(status, { detail: "Request failed." }),
+    );
+    renderDetail();
+    await screen.findByRole("heading", { name: "Cinema Paradiso" });
+
+    await confirmAction("Archiver");
+
+    expect(await screen.findByText(message)).toBeTruthy();
   });
 });

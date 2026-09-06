@@ -25,7 +25,12 @@ vi.mock("./api/auth", async (importOriginal) => {
   };
 });
 
-vi.mock("./api/films", () => ({ getFilms: vi.fn(), getFilm: vi.fn() }));
+vi.mock("./api/films", () => ({
+  archiveFilm: vi.fn(),
+  getFilms: vi.fn(),
+  getFilm: vi.fn(),
+  unarchiveFilm: vi.fn(),
+}));
 
 const film: Film = {
   id: 7,

@@ -2,9 +2,34 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import (
+    TokenObtainPairSerializer,
+    TokenRefreshSerializer,
+)
+from rest_framework_simplejwt.settings import api_settings
 
 from cinema.models import Author, AuthorRating, Film, FilmRating, User
 from cinema.roles import SPECTATOR_GROUP
+
+
+class CinemaTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token["can_change_film"] = user.is_staff and user.has_perm("cinema.change_film")
+        return token
+
+
+class CinemaTokenRefreshSerializer(TokenRefreshSerializer):
+    def validate(self, attrs):
+        refresh = self.token_class(attrs["refresh"])
+        user = User.objects.get(
+            **{api_settings.USER_ID_FIELD: refresh[api_settings.USER_ID_CLAIM]}
+        )
+        refresh["can_change_film"] = user.is_staff and user.has_perm(
+            "cinema.change_film"
+        )
+        return super().validate({**attrs, "refresh": str(refresh)})
 
 
 class LocalRatingField(serializers.DecimalField):

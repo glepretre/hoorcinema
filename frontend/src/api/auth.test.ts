@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { login, logout, registerSpectator } from "./auth";
-import { useAuthStore } from "../store/auth";
+import { canChangeFilmFromToken, useAuthStore } from "../store/auth";
 
 function jsonResponse(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
@@ -19,6 +19,15 @@ afterEach(() => {
 });
 
 describe("authentication API", () => {
+  test("reads film change capability from access tokens", () => {
+    const authorized = `header.${btoa(JSON.stringify({ can_change_film: true }))}.signature`;
+    const unauthorized = `header.${btoa(JSON.stringify({ can_change_film: false }))}.signature`;
+
+    expect(canChangeFilmFromToken(authorized)).toBe(true);
+    expect(canChangeFilmFromToken(unauthorized)).toBe(false);
+    expect(canChangeFilmFromToken("invalid-token")).toBe(false);
+  });
+
   test("trims profile fields before registration", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")

@@ -1,4 +1,5 @@
 from django.db.models import Avg, Prefetch
+from django.db.models.functions import Now
 from rest_framework import filters, generics, status
 from rest_framework.decorators import api_view
 from rest_framework.pagination import PageNumberPagination
@@ -79,9 +80,29 @@ class FilmArchiveView(FilmQuerysetMixin, generics.GenericAPIView):
 
     def patch(self, request, *args, **kwargs):
         film = self.get_object()
-        if not film.is_archived:
-            film.is_archived = True
-            film.save(update_fields=("is_archived", "updated_at"))
+        updated = Film.objects.filter(pk=film.pk, is_archived=False).update(
+            is_archived=True,
+            updated_at=Now(),
+        )
+        if updated:
+            film.refresh_from_db(fields=("is_archived", "updated_at"))
+        return Response(
+            FilmSerializer(film, context=self.get_serializer_context()).data
+        )
+
+
+class FilmUnarchiveView(FilmQuerysetMixin, generics.GenericAPIView):
+    http_method_names = ("patch", "options")
+    permission_classes = (StaffDjangoModelPermissions,)
+
+    def patch(self, request, *args, **kwargs):
+        film = self.get_object()
+        updated = Film.objects.filter(pk=film.pk, is_archived=True).update(
+            is_archived=False,
+            updated_at=Now(),
+        )
+        if updated:
+            film.refresh_from_db(fields=("is_archived", "updated_at"))
         return Response(
             FilmSerializer(film, context=self.get_serializer_context()).data
         )

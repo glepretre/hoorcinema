@@ -30,3 +30,17 @@ export function getFilms(params: FilmListParams): Promise<PaginatedFilms> {
 export function getFilm(id: number): Promise<Film> {
   return apiRequest(`/api/films/${id}/`);
 }
+
+export function archiveFilm(id: number): Promise<Film> {
+  return apiRequest(`/api/films/${id}/archive/`, {
+    method: "PATCH",
+    authenticated: true,
+  });
+}
+
+export function unarchiveFilm(id: number): Promise<Film> {
+  return apiRequest(`/api/films/${id}/unarchive/`, {
+    method: "PATCH",
+    authenticated: true,
+  });
+}

@@ -107,8 +107,7 @@ class Command(BaseCommand):
             {
                 key: value
                 for key, value in details.items()
-                if value is not None
-                and (not isinstance(value, str) or value.strip())
+                if value is not None and (not isinstance(value, str) or value.strip())
             }
         )
         return merged

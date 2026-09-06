@@ -1,8 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { Alert, Avatar, Button, Spin, Typography } from "antd";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Alert, Avatar, Button, Modal, Spin, Typography } from "antd";
+import { useEffect, useRef, useState } from "react";
 
 import { ApiError } from "../api/client";
-import { getFilm } from "../api/films";
+import { archiveFilm, getFilm, unarchiveFilm } from "../api/films";
+import { canChangeFilmFromToken, useAuthStore } from "../store/auth";
 import { localRating, posterUrl, statusLabels } from "./filmPresentation";
 
 const { Paragraph, Text, Title } = Typography;
@@ -24,15 +26,62 @@ function authorName(author: {
   );
 }
 
+function archivalErrorMessage(error: unknown, isArchived: boolean): string {
+  const action = isArchived ? "de désarchiver" : "d’archiver";
+  if (error instanceof ApiError && error.status === 401) {
+    return "Votre session a expiré. Reconnectez-vous pour continuer.";
+  }
+  if (error instanceof ApiError && error.status === 403) {
+    return `Vous n’avez pas l’autorisation ${action} ce film.`;
+  }
+  return `Impossible ${action} ce film. Vérifiez votre connexion puis réessayez.`;
+}
+
 export function FilmDetail({
   filmId,
   backLabel = "Retour au catalogue",
   onBack,
 }: FilmDetailProps) {
+  const queryClient = useQueryClient();
+  const archivalPending = useRef(false);
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
+  const canChangeFilm = useAuthStore((state) =>
+    canChangeFilmFromToken(state.accessToken),
+  );
   const filmQuery = useQuery({
     queryKey: ["films", "detail", filmId],
     queryFn: () => getFilm(filmId),
   });
+  const archivalMutation = useMutation({
+    mutationFn: (isArchived: boolean) =>
+      isArchived ? unarchiveFilm(filmId) : archiveFilm(filmId),
+    onSuccess: async (updatedFilm) => {
+      queryClient.setQueryData(["films", "detail", filmId], updatedFilm);
+      setIsConfirmationOpen(false);
+      setSuccessToast(
+        updatedFilm.is_archived ? "Film archivé" : "Film désarchivé",
+      );
+      await queryClient.invalidateQueries({
+        queryKey: ["films"],
+        refetchType: "none",
+      });
+    },
+    onError: () => {
+      setIsConfirmationOpen(false);
+    },
+    onSettled: () => {
+      archivalPending.current = false;
+    },
+  });
+
+  useEffect(() => {
+    if (!successToast) {
+      return;
+    }
+    const timeout = window.setTimeout(() => setSuccessToast(null), 4_000);
+    return () => window.clearTimeout(timeout);
+  }, [successToast]);
 
   if (filmQuery.isPending) {
     return (
@@ -85,7 +134,49 @@ export function FilmDetail({
         <Button className="detail-back" onClick={onBack}>
           ← {backLabel}
         </Button>
+        {canChangeFilm ? (
+          <Button
+            danger={!film.is_archived}
+            loading={archivalMutation.isPending}
+            disabled={archivalMutation.isPending}
+            onClick={() => {
+              archivalMutation.reset();
+              setIsConfirmationOpen(true);
+            }}
+          >
+            {film.is_archived ? "Désarchiver" : "Archiver"}
+          </Button>
+        ) : null}
       </header>
+
+      <Modal
+        centered
+        open={isConfirmationOpen}
+        title={
+          film.is_archived ? "Désarchiver ce film ?" : "Archiver ce film ?"
+        }
+        okText={film.is_archived ? "Désarchiver" : "Archiver"}
+        cancelText="Annuler"
+        confirmLoading={archivalMutation.isPending}
+        cancelButtonProps={{ disabled: archivalMutation.isPending }}
+        closable={!archivalMutation.isPending}
+        keyboard={!archivalMutation.isPending}
+        maskClosable={!archivalMutation.isPending}
+        onCancel={() => setIsConfirmationOpen(false)}
+        onOk={() => {
+          if (archivalPending.current) {
+            return;
+          }
+          archivalPending.current = true;
+          archivalMutation.mutate(film.is_archived);
+        }}
+      >
+        <Paragraph>
+          {film.is_archived
+            ? "Le film réapparaîtra dans le catalogue principal."
+            : "Le film sera déplacé vers les films archivés."}
+        </Paragraph>
+      </Modal>
 
       <article className="film-detail-content">
         <div className="detail-poster-frame">
@@ -106,6 +197,18 @@ export function FilmDetail({
         </div>
 
         <div className="detail-copy">
+          {archivalMutation.isError ? (
+            <Alert
+              className="detail-action-alert"
+              type="error"
+              showIcon
+              title="Action impossible"
+              description={archivalErrorMessage(
+                archivalMutation.error,
+                film.is_archived,
+              )}
+            />
+          ) : null}
           <Title>{film.title}</Title>
 
           <div className="detail-ratings" aria-label="Notes du film">
@@ -190,6 +293,12 @@ export function FilmDetail({
           </dl>
         </div>
       </article>
+      {successToast ? (
+        <div className="detail-success-toast" role="status">
+          <span aria-hidden>✓</span>
+          {successToast}
+        </div>
+      ) : null}
     </main>
   );
 }

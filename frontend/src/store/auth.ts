@@ -13,6 +13,24 @@ interface AuthState {
   clearTokens: () => void;
 }
 
+export function canChangeFilmFromToken(accessToken: string | null): boolean {
+  if (!accessToken) {
+    return false;
+  }
+
+  try {
+    const payload = accessToken.split(".")[1];
+    if (!payload) {
+      return false;
+    }
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const decoded = JSON.parse(atob(base64)) as { can_change_film?: unknown };
+    return decoded.can_change_film === true;
+  } catch {
+    return false;
+  }
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({

@@ -1,8 +1,9 @@
 import pytest
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from cinema.models import Film, User
 from cinema.roles import SPECTATOR_GROUP
@@ -77,6 +78,54 @@ def test_login_returns_access_and_refresh_tokens(spectator):
 
     assert response.status_code == 200
     assert set(response.json()) == {"access", "refresh"}
+    assert AccessToken(response.json()["access"])["can_change_film"] is False
+
+
+@pytest.mark.django_db
+def test_login_exposes_film_change_capability_for_authorized_staff():
+    staff = User.objects.create_user(
+        username="film_manager",
+        password="Secure-test-password-42",
+        is_staff=True,
+    )
+    staff.user_permissions.add(
+        Permission.objects.get(
+            content_type__app_label="cinema",
+            codename="change_film",
+        )
+    )
+
+    response = APIClient().post(
+        reverse("auth-login"),
+        {"username": staff.username, "password": "Secure-test-password-42"},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert AccessToken(response.json()["access"])["can_change_film"] is True
+
+
+@pytest.mark.django_db
+def test_refresh_recomputes_film_change_capability(spectator):
+    client = APIClient()
+    refresh = login(client, spectator).json()["refresh"]
+    spectator.is_staff = True
+    spectator.save(update_fields=("is_staff",))
+    spectator.user_permissions.add(
+        Permission.objects.get(
+            content_type__app_label="cinema",
+            codename="change_film",
+        )
+    )
+
+    response = client.post(
+        reverse("auth-refresh"),
+        {"refresh": refresh},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert AccessToken(response.json()["access"])["can_change_film"] is True
 
 
 @pytest.mark.django_db
@@ -106,6 +155,7 @@ def test_login_rejects_invalid_credentials(spectator):
 def test_refresh_rotates_token_and_blacklists_previous_token(spectator):
     client = APIClient()
     previous_refresh = login(client, spectator).json()["refresh"]
+    previous_jti = RefreshToken(previous_refresh)["jti"]
 
     response = client.post(
         reverse("auth-refresh"),
@@ -116,7 +166,8 @@ def test_refresh_rotates_token_and_blacklists_previous_token(spectator):
     assert response.status_code == 200
     assert set(response.json()) == {"access", "refresh"}
     assert response.json()["refresh"] != previous_refresh
-    assert BlacklistedToken.objects.filter(token__token=previous_refresh).exists()
+    assert AccessToken(response.json()["access"])["can_change_film"] is False
+    assert BlacklistedToken.objects.filter(token__jti=previous_jti).exists()
 
     rejected = client.post(
         reverse("auth-refresh"),
@@ -130,6 +181,7 @@ def test_refresh_rotates_token_and_blacklists_previous_token(spectator):
 def test_logout_blacklists_refresh_token(spectator):
     client = APIClient()
     refresh = login(client, spectator).json()["refresh"]
+    refresh_jti = RefreshToken(refresh)["jti"]
 
     response = client.post(
         reverse("auth-logout"),
@@ -138,7 +190,7 @@ def test_logout_blacklists_refresh_token(spectator):
     )
 
     assert response.status_code == 200
-    assert BlacklistedToken.objects.filter(token__token=refresh).exists()
+    assert BlacklistedToken.objects.filter(token__jti=refresh_jti).exists()
 
     repeated = client.post(
         reverse("auth-logout"),

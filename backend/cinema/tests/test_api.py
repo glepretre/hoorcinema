@@ -308,6 +308,7 @@ def staff_user(db):
     [
         ("patch", "film-detail", "local_film", {"title": "Changed"}),
         ("patch", "film-archive", "local_film", {}),
+        ("patch", "film-unarchive", "local_film", {}),
         ("patch", "author-detail", "local_author", {"bio": "Changed"}),
         ("delete", "author-detail", "local_author", None),
     ],
@@ -428,6 +429,32 @@ def test_film_archiving_is_idempotent(catalogue, staff_user):
 
 
 @pytest.mark.django_db
+def test_film_unarchiving_is_idempotent(catalogue, staff_user):
+    grant_permission(staff_user, "change_film")
+    film = catalogue["remote_film"]
+    film.is_archived = True
+    film.save(update_fields=("is_archived", "updated_at"))
+    client = APIClient()
+    client.force_authenticate(staff_user)
+    url = reverse("film-unarchive", args=(film.pk,))
+
+    first_response = client.patch(url, {}, format="json")
+    film.refresh_from_db()
+    first_updated_at = film.updated_at
+    second_response = client.patch(url, {}, format="json")
+    film.refresh_from_db()
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert first_response.json()["status"] == Film.Status.IN_PRODUCTION
+    assert second_response.json()["status"] == Film.Status.IN_PRODUCTION
+    assert first_response.json()["is_archived"] is False
+    assert second_response.json()["is_archived"] is False
+    assert film.is_archived is False
+    assert film.updated_at == first_updated_at
+
+
+@pytest.mark.django_db
 def test_author_and_film_updates_return_json_validation_errors(catalogue, staff_user):
     grant_permission(staff_user, "change_film")
     grant_permission(staff_user, "change_author")
@@ -457,6 +484,7 @@ def test_author_and_film_updates_return_json_validation_errors(catalogue, staff_
     [
         ("patch", "film-detail", "local_film", {"title": "Super Film"}, 200),
         ("patch", "film-archive", "local_film", {}, 200),
+        ("patch", "film-unarchive", "local_film", {}, 200),
         ("patch", "author-detail", "local_author", {"bio": "Super Bio"}, 200),
     ],
 )
@@ -502,6 +530,7 @@ def test_superuser_can_delete_author_without_films():
         ("put", "film-detail", "local_film"),
         ("put", "author-detail", "local_author"),
         ("put", "film-archive", "local_film"),
+        ("put", "film-unarchive", "local_film"),
     ],
 )
 def test_unsupported_administration_methods_are_not_available(

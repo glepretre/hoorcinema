@@ -88,6 +88,7 @@ Returns a lightweight application liveness status:
 - `GET /api/authors/` and `GET /api/authors/{id}/`: public author list and detail.
 - `PATCH /api/films/{id}/`: update a film as staff with `cinema.change_film`.
 - `PATCH /api/films/{id}/archive/`: archive a film as staff with `cinema.change_film`.
+- `PATCH /api/films/{id}/unarchive/`: unarchive a film as staff with `cinema.change_film`.
 - `PATCH /api/authors/{id}/`: update an author as staff with `cinema.change_author`.
 - `DELETE /api/authors/{id}/`: delete an author without films as staff with `cinema.delete_author`.
 - `POST /api/auth/register/`: create a spectator account.

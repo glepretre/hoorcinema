@@ -5,6 +5,10 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
+from cinema.serializers import (
+    CinemaTokenObtainPairSerializer,
+    CinemaTokenRefreshSerializer,
+)
 from cinema.views import (
     AuthorDetailView,
     AuthorListView,
@@ -15,6 +19,7 @@ from cinema.views import (
     FilmFavoriteView,
     FilmListView,
     FilmRatingView,
+    FilmUnarchiveView,
     RegisterView,
     health,
 )
@@ -22,8 +27,16 @@ from cinema.views import (
 urlpatterns = [
     path("health/", health, name="health"),
     path("auth/register/", RegisterView.as_view(), name="auth-register"),
-    path("auth/login/", TokenObtainPairView.as_view(), name="auth-login"),
-    path("auth/refresh/", TokenRefreshView.as_view(), name="auth-refresh"),
+    path(
+        "auth/login/",
+        TokenObtainPairView.as_view(serializer_class=CinemaTokenObtainPairSerializer),
+        name="auth-login",
+    ),
+    path(
+        "auth/refresh/",
+        TokenRefreshView.as_view(serializer_class=CinemaTokenRefreshSerializer),
+        name="auth-refresh",
+    ),
     path("auth/logout/", TokenBlacklistView.as_view(), name="auth-logout"),
     path("films/", FilmListView.as_view(), name="film-list"),
     path("films/<int:pk>/", FilmDetailView.as_view(), name="film-detail"),
@@ -41,6 +54,11 @@ urlpatterns = [
         "films/<int:pk>/archive/",
         FilmArchiveView.as_view(),
         name="film-archive",
+    ),
+    path(
+        "films/<int:pk>/unarchive/",
+        FilmUnarchiveView.as_view(),
+        name="film-unarchive",
     ),
     path("authors/", AuthorListView.as_view(), name="author-list"),
     path("authors/<int:pk>/", AuthorDetailView.as_view(), name="author-detail"),
