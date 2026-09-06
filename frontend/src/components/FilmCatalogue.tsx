@@ -5,7 +5,9 @@ import {
   ConfigProvider,
   Empty,
   Input,
+  Menu,
   Pagination,
+  Popover,
   Select,
   Spin,
   Table,
@@ -49,6 +51,21 @@ const catalogueControlsTheme: ThemeConfig = {
     },
   },
 };
+
+function ProfileIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox="0 0 24 24"
+      width="1em"
+      height="1em"
+      fill="currentColor"
+    >
+      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4Zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4Z" />
+    </svg>
+  );
+}
 
 interface FilmCatalogueProps {
   isArchived: boolean;
@@ -162,9 +179,29 @@ export function FilmCatalogue({
           </Paragraph>
         </div>
         <div className="catalogue-header-actions">
-          <Button loading={isLoggingOut} onClick={onLogout}>
-            Se déconnecter
-          </Button>
+          <Popover
+            content={
+              <Menu
+                selectable={false}
+                items={[
+                  {
+                    key: "logout",
+                    label: isLoggingOut ? "Déconnexion…" : "Se déconnecter",
+                    disabled: isLoggingOut,
+                  },
+                ]}
+                onClick={onLogout}
+              />
+            }
+            arrow={{ pointAtCenter: false }}
+            placement="bottomLeft"
+            rootClassName="account-popover"
+            trigger="click"
+          >
+            <Button className="account-trigger" icon={<ProfileIcon />}>
+              Mon compte
+            </Button>
+          </Popover>
         </div>
       </header>
 

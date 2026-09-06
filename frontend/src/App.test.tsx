@@ -259,7 +259,8 @@ describe("authentication screen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Se connecter" }));
 
     await screen.findByRole("heading", { name: "Films à l’affiche" });
-    fireEvent.click(screen.getByRole("button", { name: "Se déconnecter" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mon compte" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Se déconnecter" }));
 
     await screen.findByRole("heading", { name: "Créer un compte" });
     expect(useAuthStore.getState().accessToken).toBeNull();

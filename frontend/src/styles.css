@@ -189,6 +189,28 @@ body {
   background: rgb(17 16 15 / 36%);
 }
 
+.catalogue-header-actions .account-trigger,
+.account-popover {
+  width: 132px;
+}
+
+.account-popover .ant-popover-container {
+  padding: 4px 0;
+}
+
+.account-popover .ant-menu {
+  width: 100%;
+  border-inline-end: 0;
+}
+
+.account-popover .ant-menu-item.ant-menu-item-only-child {
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  padding: 0 16px;
+  line-height: 32px;
+}
+
 .catalogue-content {
   width: min(100% - 48px, 1240px);
   margin: -54px auto 0;
