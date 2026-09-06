@@ -111,7 +111,7 @@ class Command(BaseCommand):
             film.title = title.strip()[:255]
             film.description = str(details.get("overview") or "")
             film.release_date = self._parse_date(details.get("release_date"))
-            film.status = Film.Status.PUBLISHED
+            film.status = self._status(details.get("status"))
             film.source = Film.Source.TMDB
             film.tmdb_vote_average = self._parse_vote(details.get("vote_average"))
             vote_count = details.get("vote_count")
@@ -131,6 +131,14 @@ class Command(BaseCommand):
             if dry_run:
                 transaction.set_rollback(True)
             return "created" if created else "updated"
+
+    @staticmethod
+    def _status(value):
+        if value in (None, ""):
+            return Film.Status.PLANNED
+        if value not in Film.Status.values:
+            raise TMDbError("TMDb returned an invalid movie status.")
+        return value
 
     @staticmethod
     def _authors(credits):

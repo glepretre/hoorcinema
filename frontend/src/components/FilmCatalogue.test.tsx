@@ -20,7 +20,8 @@ const film: Film = {
   title: "Cinema Paradiso",
   description: "A filmmaker remembers his childhood.",
   release_date: "1988-11-17",
-  status: "PUBLISHED",
+  status: "Released",
+  is_archived: false,
   authors: [],
   source: "TMDB",
   tmdb_id: 11216,
@@ -101,10 +102,10 @@ describe("film catalogue", () => {
     );
 
     fireEvent.mouseDown(screen.getByLabelText("Filtrer par statut"));
-    fireEvent.click(await screen.findByText("Archivé"));
+    fireEvent.click(await screen.findByText("En post-production"));
     await waitFor(() =>
       expect(filmsApi.getFilms).toHaveBeenLastCalledWith(
-        expect.objectContaining({ page: 1, status: "ARCHIVED" }),
+        expect.objectContaining({ page: 1, status: "Post Production" }),
       ),
     );
 

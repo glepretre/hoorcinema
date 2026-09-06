@@ -72,9 +72,9 @@ class FilmArchiveView(FilmQuerysetMixin, generics.GenericAPIView):
 
     def patch(self, request, *args, **kwargs):
         film = self.get_object()
-        if film.status != Film.Status.ARCHIVED:
-            film.status = Film.Status.ARCHIVED
-            film.save(update_fields=("status", "updated_at"))
+        if not film.is_archived:
+            film.is_archived = True
+            film.save(update_fields=("is_archived", "updated_at"))
         return Response(
             FilmSerializer(film, context=self.get_serializer_context()).data
         )

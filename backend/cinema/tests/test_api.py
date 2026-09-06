@@ -45,12 +45,12 @@ def catalogue(db):
         title="Aurora Story",
         description="A northern drama.",
         release_date=date(2020, 1, 2),
-        status=Film.Status.PUBLISHED,
+        status=Film.Status.RELEASED,
     )
     remote_film = Film.objects.create(
         title="Zenith Journey",
         release_date=date(2022, 5, 6),
-        status=Film.Status.DRAFT,
+        status=Film.Status.IN_PRODUCTION,
         source=Film.Source.TMDB,
         tmdb_id=42,
         tmdb_vote_average="8.25",
@@ -59,7 +59,7 @@ def catalogue(db):
     unrated_film = Film.objects.create(
         title="Middle Archive",
         release_date=date(2019, 3, 4),
-        status=Film.Status.ARCHIVED,
+        status=Film.Status.CANCELED,
     )
     local_film.authors.add(local_author)
     remote_film.authors.add(remote_author)
@@ -153,7 +153,8 @@ def test_anonymous_author_endpoints_include_nested_films(catalogue):
             "id": catalogue["local_film"].pk,
             "title": "Aurora Story",
             "release_date": "2020-01-02",
-            "status": "PUBLISHED",
+            "status": "Released",
+            "is_archived": False,
             "source": "ADMIN",
             "poster_path": "",
             "local_rating": "3.00",
@@ -167,7 +168,7 @@ def test_film_filters_search_and_ordering(catalogue):
 
     filtered = client.get(
         reverse("film-list"),
-        {"status": "PUBLISHED", "source": "ADMIN", "search": "aurora"},
+        {"status": "Released", "source": "ADMIN", "search": "aurora"},
     )
     by_release_date = client.get(reverse("film-list"), {"ordering": "-release_date"})
     by_rating = client.get(reverse("film-list"), {"ordering": "-local_rating"})
@@ -394,8 +395,11 @@ def test_film_archiving_is_idempotent(catalogue, staff_user):
 
     assert first_response.status_code == 200
     assert second_response.status_code == 200
-    assert first_response.json()["status"] == Film.Status.ARCHIVED
-    assert second_response.json()["status"] == Film.Status.ARCHIVED
+    assert first_response.json()["status"] == Film.Status.RELEASED
+    assert second_response.json()["status"] == Film.Status.RELEASED
+    assert first_response.json()["is_archived"] is True
+    assert second_response.json()["is_archived"] is True
+    assert catalogue["local_film"].is_archived is True
     assert catalogue["local_film"].updated_at == first_updated_at
 
 

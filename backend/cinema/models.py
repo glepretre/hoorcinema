@@ -62,9 +62,12 @@ class RatingScore(models.IntegerChoices):
 
 class Film(models.Model):
     class Status(models.TextChoices):
-        DRAFT = "DRAFT", "Draft"
-        PUBLISHED = "PUBLISHED", "Published"
-        ARCHIVED = "ARCHIVED", "Archived"
+        RUMORED = "Rumored", "Rumored"
+        PLANNED = "Planned", "Planned"
+        IN_PRODUCTION = "In Production", "In Production"
+        POST_PRODUCTION = "Post Production", "Post Production"
+        RELEASED = "Released", "Released"
+        CANCELED = "Canceled", "Canceled"
 
     class Source(models.TextChoices):
         ADMIN = "ADMIN", "Administration"
@@ -73,11 +76,12 @@ class Film(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     release_date = models.DateField(blank=True, db_index=True, null=True)
+    is_archived = models.BooleanField(db_index=True, default=False)
     status = models.CharField(
         choices=Status.choices,
         db_index=True,
-        default=Status.DRAFT,
-        max_length=10,
+        default=Status.PLANNED,
+        max_length=15,
     )
     authors = models.ManyToManyField(
         User,
@@ -109,7 +113,16 @@ class Film(models.Model):
         ordering = ("title", "pk")
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(status__in=("DRAFT", "PUBLISHED", "ARCHIVED")),
+                condition=models.Q(
+                    status__in=(
+                        "Rumored",
+                        "Planned",
+                        "In Production",
+                        "Post Production",
+                        "Released",
+                        "Canceled",
+                    )
+                ),
                 name="film_valid_status",
             ),
             models.CheckConstraint(

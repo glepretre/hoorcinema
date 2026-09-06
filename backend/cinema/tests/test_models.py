@@ -30,7 +30,7 @@ def film(db, author):
     instance = Film.objects.create(
         title="Northern Lights",
         description="A journey beyond the Arctic Circle.",
-        status=Film.Status.PUBLISHED,
+        status=Film.Status.RELEASED,
     )
     instance.authors.add(author)
     return instance
@@ -41,17 +41,31 @@ def test_film_choices_defaults_indexes_and_authors(author):
     film = Film.objects.create(title="First Feature")
     film.authors.add(author)
 
-    assert film.status == Film.Status.DRAFT
+    assert film.status == Film.Status.PLANNED
+    assert film.is_archived is False
     assert film.source == Film.Source.ADMIN
     assert film.tmdb_vote_average is None
     assert film.tmdb_vote_count == 0
     assert list(film.authors.all()) == [author]
     assert str(film) == "First Feature"
-    assert set(Film.Status.values) == {"DRAFT", "PUBLISHED", "ARCHIVED"}
+    assert set(Film.Status.values) == {
+        "Rumored",
+        "Planned",
+        "In Production",
+        "Post Production",
+        "Released",
+        "Canceled",
+    }
     assert set(Film.Source.values) == {"ADMIN", "TMDB"}
     assert all(
         Film._meta.get_field(field_name).db_index
-        for field_name in ("status", "source", "release_date", "created_at")
+        for field_name in (
+            "status",
+            "source",
+            "release_date",
+            "is_archived",
+            "created_at",
+        )
     )
     assert Film._meta.get_field("tmdb_id").unique
 

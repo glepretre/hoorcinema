@@ -14,6 +14,7 @@ MOVIE = {
     "title": "Remote Film",
     "overview": "Imported overview.",
     "release_date": "2025-04-12",
+    "status": "Released",
     "vote_average": 8.126,
     "vote_count": 321,
     "poster_path": "/poster.jpg",
@@ -80,7 +81,7 @@ def test_import_tmdb_creates_films_and_authors():
     assert str(film.release_date) == "2025-04-12"
     assert str(film.tmdb_vote_average) == "8.13"
     assert film.tmdb_vote_count == 321
-    assert film.status == Film.Status.PUBLISHED
+    assert film.status == Film.Status.RELEASED
     assert film.source == Film.Source.TMDB
     assert set(film.authors.values_list("tmdb_id", flat=True)) == {84, 85}
     director = User.objects.get(tmdb_id=84)
@@ -128,6 +129,8 @@ def test_import_tmdb_accepts_partial_data_and_ignores_other_crew():
 
     call_command("import_tmdb")
 
+    assert Film.objects.get(tmdb_id=42).status == Film.Status.PLANNED
+
     film = Film.objects.get(tmdb_id=42)
     assert film.description == ""
     assert film.release_date is None
@@ -158,6 +161,19 @@ def test_import_tmdb_reports_remote_failure_and_continues():
     assert not Film.objects.exists()
     assert "failed=1" in stdout.getvalue()
     assert "Failed movie 42" in stderr.getvalue()
+
+
+@pytest.mark.django_db
+def test_import_tmdb_rejects_unknown_movie_status():
+    FakeClient.movies[0] = {**MOVIE, "status": "Unknown"}
+    stdout = StringIO()
+    stderr = StringIO()
+
+    call_command("import_tmdb", stdout=stdout, stderr=stderr)
+
+    assert not Film.objects.exists()
+    assert "failed=1" in stdout.getvalue()
+    assert "invalid movie status" in stderr.getvalue()
 
 
 @pytest.mark.django_db

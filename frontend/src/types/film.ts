@@ -1,4 +1,10 @@
-export type FilmStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type FilmStatus =
+  | "Rumored"
+  | "Planned"
+  | "In Production"
+  | "Post Production"
+  | "Released"
+  | "Canceled";
 export type FilmSource = "ADMIN" | "TMDB";
 export type FilmOrdering =
   "title" | "release_date" | "-release_date" | "local_rating" | "-local_rating";
@@ -20,6 +26,7 @@ export interface Film {
   description: string;
   release_date: string | null;
   status: FilmStatus;
+  is_archived: boolean;
   authors: AuthorSummary[];
   source: FilmSource;
   tmdb_id: number | null;

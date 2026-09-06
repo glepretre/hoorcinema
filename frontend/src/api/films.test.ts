@@ -8,11 +8,11 @@ describe("film API", () => {
       buildFilmListPath({
         page: 3,
         search: "Cinéma Paradiso",
-        status: "PUBLISHED",
+        status: "In Production",
         ordering: "-local_rating",
       }),
     ).toBe(
-      "/api/films/?page=3&search=Cin%C3%A9ma+Paradiso&status=PUBLISHED&ordering=-local_rating",
+      "/api/films/?page=3&search=Cin%C3%A9ma+Paradiso&status=In+Production&ordering=-local_rating",
     );
   });
 

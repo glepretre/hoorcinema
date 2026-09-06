@@ -58,7 +58,7 @@ def spectator(db):
 
 @pytest.fixture
 def rated_film(db, author, spectator):
-    film = Film.objects.create(title="Rated Feature", status=Film.Status.PUBLISHED)
+    film = Film.objects.create(title="Rated Feature", status=Film.Status.RELEASED)
     film.authors.add(author)
     FilmRating.objects.create(film=film, spectator=spectator, score=4)
     return film
@@ -152,7 +152,7 @@ def test_admin_changelists_apply_status_and_author_filters(
 
     film_response = client.get(
         f"{reverse('admin:cinema_film_changelist')}?"
-        f"{urlencode({'status__exact': Film.Status.PUBLISHED})}"
+        f"{urlencode({'status__exact': Film.Status.RELEASED})}"
     )
     author_response = client.get(
         f"{reverse('admin:cinema_author_changelist')}?has_films=yes"

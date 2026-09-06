@@ -21,15 +21,21 @@ const { Paragraph, Text, Title } = Typography;
 const POSTER_BASE_URL = "https://image.tmdb.org/t/p/w185";
 
 const statusLabels: Record<FilmStatus, string> = {
-  DRAFT: "Brouillon",
-  PUBLISHED: "Publié",
-  ARCHIVED: "Archivé",
+  Rumored: "Rumeur",
+  Planned: "Prévu",
+  "In Production": "En production",
+  "Post Production": "En post-production",
+  Released: "Sorti",
+  Canceled: "Annulé",
 };
 
 const statusColors: Record<FilmStatus, string> = {
-  DRAFT: "gold",
-  PUBLISHED: "green",
-  ARCHIVED: "default",
+  Rumored: "purple",
+  Planned: "blue",
+  "In Production": "cyan",
+  "Post Production": "geekblue",
+  Released: "green",
+  Canceled: "default",
 };
 
 function posterUrl(path: string): string | undefined {
@@ -122,7 +128,7 @@ export function FilmCatalogue({
         title: "Statut",
         dataIndex: "status",
         key: "status",
-        width: 130,
+        width: 170,
         responsive: ["sm"],
         render: (filmStatus: FilmStatus) => (
           <Tag color={statusColors[filmStatus]}>{statusLabels[filmStatus]}</Tag>

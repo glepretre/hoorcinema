@@ -17,10 +17,10 @@ describe("catalogue store", () => {
     });
 
     useCatalogueStore.getState().setPage(2);
-    useCatalogueStore.getState().setStatus("ARCHIVED");
+    useCatalogueStore.getState().setStatus("Canceled");
 
     expect(useCatalogueStore.getState()).toMatchObject({
-      status: "ARCHIVED",
+      status: "Canceled",
       page: 1,
     });
   });

@@ -106,6 +106,11 @@ a replacement refresh token and invalidates the previous one.
 Rating requests use a JSON body containing an integer `score` from 1 to 5. Rating
 and favorite endpoints require an authenticated user with the spectator role.
 
+Film statuses use TMDb's values: `Rumored`, `Planned`, `In Production`,
+`Post Production`, `Released`, and `Canceled`. TMDb imports preserve the remote
+status, while locally created films default to `Planned`. Hoorcinema archival is
+represented separately by the `is_archived` field and never changes the TMDb status.
+
 ## License
 
 Hoorcinema is available under the [MIT License](LICENSE).
