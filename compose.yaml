@@ -45,6 +45,9 @@ services:
       - backend
     ports:
       - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 
 volumes:
   postgres18_data:
