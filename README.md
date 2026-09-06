@@ -73,12 +73,18 @@ Import popular films and their directors and writers from TMDb after setting
 docker compose exec backend uv run python manage.py import_tmdb --limit 20 --page 1
 ```
 
+Import a single film by its TMDb movie ID with:
+
+```bash
+docker compose exec backend uv run python manage.py import_tmdb --movie-id <tmdb_id>
+```
+
 The command updates imported records by TMDb ID and preserves local ratings and
 favorites. Imported films are published, and imported people receive unusable
 passwords. French (`fr-FR`) is used by default, with missing localized fields
-filled from English (`en-US`). Use `--movie-id ID` for one film,
-`--language en-US` to force English, or `--dry-run` to validate an import without
-saving it. Local records that conflict with a TMDb ID are never overwritten.
+filled from English (`en-US`). Use `--language en-US` to force English or `--dry-run`
+to validate an import without saving it. Local records that conflict with a TMDb ID
+are never overwritten.
 
 ## Tests and quality checks
 
@@ -100,18 +106,9 @@ docker compose run --rm frontend npm run test -- --run
 docker compose run --rm frontend npm run build
 ```
 
-## API
+## API endpoints
 
-### `GET /api/health/`
-
-Returns a lightweight application liveness status:
-
-```json
-{"status": "ok"}
-```
-
-### Endpoints
-
+- `GET /api/health/`: return the application liveness status as `{"status": "ok"}`.
 - `GET /api/films/` and `GET /api/films/{id}/`: public film list and detail. The list accepts `is_archived=true|false` and returns active films by default.
 - `GET /api/authors/` and `GET /api/authors/{id}/`: public author list and detail.
 - `PATCH /api/films/{id}/`: update a film as staff with `cinema.change_film`.
