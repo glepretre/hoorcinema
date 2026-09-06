@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Alert,
   Button,
+  ConfigProvider,
   Empty,
   Input,
   Select,
@@ -9,6 +10,7 @@ import {
   Table,
   Tag,
   Typography,
+  type ThemeConfig,
   type TableColumnsType,
 } from "antd";
 import { useMemo, useState } from "react";
@@ -19,6 +21,22 @@ import type { Film, FilmOrdering, FilmStatus } from "../types/film";
 
 const { Paragraph, Text, Title } = Typography;
 const POSTER_BASE_URL = "https://image.tmdb.org/t/p/w185";
+const catalogueControlsTheme: ThemeConfig = {
+  token: {
+    colorBorder: "#746b63",
+    colorTextPlaceholder: "#746b63",
+  },
+  components: {
+    Input: {
+      activeBorderColor: "#d85b36",
+      hoverBorderColor: "#746b63",
+    },
+    Select: {
+      activeBorderColor: "#d85b36",
+      hoverBorderColor: "#746b63",
+    },
+  },
+};
 
 const statusLabels: Record<FilmStatus, string> = {
   Rumored: "Rumeur",
@@ -169,42 +187,44 @@ export function FilmCatalogue({
           )}
         </div>
 
-        <div className="catalogue-controls">
-          <Input.Search
-            aria-label="Rechercher un film"
-            allowClear
-            defaultValue={search}
-            enterButton="Rechercher"
-            placeholder="Titre du film"
-            onSearch={setSearch}
-          />
-          <Select<FilmStatus | undefined>
-            aria-label="Filtrer par statut"
-            allowClear
-            placeholder="Tous les statuts"
-            value={status}
-            options={Object.entries(statusLabels).map(([value, label]) => ({
-              value: value as FilmStatus,
-              label,
-            }))}
-            onChange={setStatus}
-          />
-          <Select<FilmOrdering>
-            aria-label="Trier les films"
-            value={ordering}
-            options={[
-              { value: "title", label: "Titre (A–Z)" },
-              { value: "-release_date", label: "Sortie (plus récente)" },
-              { value: "release_date", label: "Sortie (plus ancienne)" },
-              { value: "-local_rating", label: "Note (meilleure)" },
-              { value: "local_rating", label: "Note (moins bonne)" },
-            ]}
-            onChange={(value) => {
-              setOrdering(value);
-              setPage(1);
-            }}
-          />
-        </div>
+        <ConfigProvider theme={catalogueControlsTheme}>
+          <div className="catalogue-controls">
+            <Input.Search
+              aria-label="Rechercher un film"
+              allowClear
+              defaultValue={search}
+              enterButton="Rechercher"
+              placeholder="Titre du film"
+              onSearch={setSearch}
+            />
+            <Select<FilmStatus | undefined>
+              aria-label="Filtrer par statut"
+              allowClear
+              placeholder="Tous les statuts"
+              value={status}
+              options={Object.entries(statusLabels).map(([value, label]) => ({
+                value: value as FilmStatus,
+                label,
+              }))}
+              onChange={setStatus}
+            />
+            <Select<FilmOrdering>
+              aria-label="Trier les films"
+              value={ordering}
+              options={[
+                { value: "title", label: "Titre (A–Z)" },
+                { value: "-release_date", label: "Sortie (plus récente)" },
+                { value: "release_date", label: "Sortie (plus ancienne)" },
+                { value: "-local_rating", label: "Note (meilleure)" },
+                { value: "local_rating", label: "Note (moins bonne)" },
+              ]}
+              onChange={(value) => {
+                setOrdering(value);
+                setPage(1);
+              }}
+            />
+          </div>
+        </ConfigProvider>
 
         {filmsQuery.isPending ? (
           <div className="catalogue-state" role="status">
