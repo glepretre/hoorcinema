@@ -3,8 +3,9 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from cinema.models import Film
 from cinema.roles import AUTHOR_GROUP, ensure_role_groups
@@ -78,7 +79,12 @@ class Command(BaseCommand):
                     current_movie_id, language=options["language"]
                 )
                 action = self._import_movie(details, credits, options["dry_run"])
-            except (TMDbError, ImportCollisionError) as error:
+            except (
+                TMDbError,
+                ImportCollisionError,
+                ValidationError,
+                IntegrityError,
+            ) as error:
                 counts["failed"] += 1
                 self.stderr.write(f"Failed movie {current_movie_id}: {error}")
                 continue
@@ -194,7 +200,7 @@ class Command(BaseCommand):
             raise ImportCollisionError(
                 f"refusing to overwrite local user with TMDb ID {tmdb_id}"
             )
-        username_owner = user_model.objects.filter(username=username).first()
+        username_owner = user_model.objects.filter(username__iexact=username).first()
         if username_owner and username_owner != user:
             raise ImportCollisionError(f"username {username} is already in use")
         if user is None:

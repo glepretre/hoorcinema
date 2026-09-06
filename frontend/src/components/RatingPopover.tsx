@@ -51,6 +51,7 @@ export function RatingPopover({ label, onRate, onRated }: RatingPopoverProps) {
         <div className="rating-popover-content">
           <Text strong>{label}</Text>
           <Rate
+            allowClear={false}
             value={score}
             disabled={mutation.isPending}
             tooltips={[

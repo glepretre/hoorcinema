@@ -212,6 +212,19 @@ def test_import_tmdb_refuses_local_identifier_collision():
 
 
 @pytest.mark.django_db
+def test_import_tmdb_reports_case_insensitive_author_username_collision():
+    User.objects.create_user(username="TMDB_84")
+    stdout = StringIO()
+    stderr = StringIO()
+
+    call_command("import_tmdb", stdout=stdout, stderr=stderr)
+
+    assert not Film.objects.exists()
+    assert "failed=1" in stdout.getvalue()
+    assert "username tmdb_84 is already in use" in stderr.getvalue()
+
+
+@pytest.mark.django_db
 def test_import_tmdb_can_import_one_movie_without_listing():
     call_command("import_tmdb", movie_id=42)
 

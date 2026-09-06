@@ -10,8 +10,10 @@ from cinema.models import AuthorRating, Film, FilmRating, User
 from cinema.roles import AUTHOR_GROUP, SPECTATOR_GROUP
 from cinema.serializers import (
     AuthorSerializer,
+    AuthorSummarySerializer,
     AuthorWriteSerializer,
     FilmSerializer,
+    FilmSummarySerializer,
     FilmWriteSerializer,
 )
 
@@ -120,6 +122,14 @@ def test_anonymous_film_list_is_paginated_and_nested(catalogue):
             "local_rating": "4.00",
         }
     ]
+
+
+@pytest.mark.django_db
+def test_api_does_not_offer_an_html_representation(catalogue):
+    response = APIClient().get(reverse("film-list"), HTTP_ACCEPT="text/html")
+
+    assert response.status_code == 406
+    assert response["Content-Type"] == "application/json"
 
 
 @pytest.mark.django_db
@@ -279,7 +289,9 @@ def test_list_query_count_is_constant(url_name, catalogue, django_assert_num_que
 def test_public_serializers_do_not_use_serializer_method_fields():
     for serializer_class in (
         FilmSerializer,
+        FilmSummarySerializer,
         AuthorSerializer,
+        AuthorSummarySerializer,
         FilmWriteSerializer,
         AuthorWriteSerializer,
     ):
@@ -343,6 +355,11 @@ def test_administration_operations_reject_unauthorized_users(
 @pytest.mark.django_db
 def test_staff_with_permission_can_update_film(catalogue, staff_user):
     grant_permission(staff_user, "change_film")
+    AuthorRating.objects.create(
+        author=catalogue["remote_author"],
+        spectator=User.objects.get(username="first_reviewer"),
+        score=5,
+    )
     client = APIClient()
     client.force_authenticate(staff_user)
 
@@ -358,6 +375,7 @@ def test_staff_with_permission_can_update_film(catalogue, staff_user):
     assert response.status_code == 200
     assert response.json()["title"] == "Northern Lights"
     assert response.json()["authors"][0]["username"] == "tmdb_84"
+    assert response.json()["authors"][0]["local_rating"] == "5.00"
     catalogue["local_film"].refresh_from_db()
     assert catalogue["local_film"].title == "Northern Lights"
     assert list(catalogue["local_film"].authors.all()) == [catalogue["remote_author"]]
@@ -378,6 +396,7 @@ def test_staff_with_permission_can_update_author(catalogue, staff_user):
     assert response.status_code == 200
     assert response.json()["bio"] == "Director and screenwriter."
     assert response.json()["films"][0]["title"] == "Aurora Story"
+    assert response.json()["films"][0]["local_rating"] == "3.00"
 
 
 @pytest.mark.django_db

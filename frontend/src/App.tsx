@@ -117,6 +117,7 @@ export default function App() {
       backLabel={isArchived ? "Retour aux films archivés" : undefined}
       isAuthenticated={isAuthenticated}
       onBack={() => navigateToCatalogue(route.cataloguePath)}
+      onLogin={() => navigateToAuth("login")}
     />
   ) : (
     <FilmCatalogue

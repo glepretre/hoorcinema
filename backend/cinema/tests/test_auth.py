@@ -79,6 +79,7 @@ def test_login_returns_access_and_refresh_tokens(spectator):
     assert response.status_code == 200
     assert set(response.json()) == {"access", "refresh"}
     assert AccessToken(response.json()["access"])["can_change_film"] is False
+    assert AccessToken(response.json()["access"])["can_rate"] is True
 
 
 @pytest.mark.django_db
@@ -103,6 +104,7 @@ def test_login_exposes_film_change_capability_for_authorized_staff():
 
     assert response.status_code == 200
     assert AccessToken(response.json()["access"])["can_change_film"] is True
+    assert AccessToken(response.json()["access"])["can_rate"] is False
 
 
 @pytest.mark.django_db
@@ -126,6 +128,22 @@ def test_refresh_recomputes_film_change_capability(spectator):
 
     assert response.status_code == 200
     assert AccessToken(response.json()["access"])["can_change_film"] is True
+    assert AccessToken(response.json()["access"])["can_rate"] is True
+
+
+@pytest.mark.django_db
+def test_refresh_rejects_a_deleted_user(spectator):
+    client = APIClient()
+    refresh = login(client, spectator).json()["refresh"]
+    spectator.delete()
+
+    response = client.post(
+        reverse("auth-refresh"),
+        {"refresh": refresh},
+        format="json",
+    )
+
+    assert response.status_code == 401
 
 
 @pytest.mark.django_db
@@ -167,6 +185,7 @@ def test_refresh_rotates_token_and_blacklists_previous_token(spectator):
     assert set(response.json()) == {"access", "refresh"}
     assert response.json()["refresh"] != previous_refresh
     assert AccessToken(response.json()["access"])["can_change_film"] is False
+    assert AccessToken(response.json()["access"])["can_rate"] is True
     assert BlacklistedToken.objects.filter(token__jti=previous_jti).exists()
 
     rejected = client.post(

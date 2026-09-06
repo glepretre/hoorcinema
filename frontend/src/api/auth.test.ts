@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { login, logout, registerSpectator } from "./auth";
-import { canChangeFilmFromToken, useAuthStore } from "../store/auth";
+import {
+  canChangeFilmFromToken,
+  canRateFromToken,
+  useAuthStore,
+} from "../store/auth";
 
 function jsonResponse(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
@@ -26,6 +30,15 @@ describe("authentication API", () => {
     expect(canChangeFilmFromToken(authorized)).toBe(true);
     expect(canChangeFilmFromToken(unauthorized)).toBe(false);
     expect(canChangeFilmFromToken("invalid-token")).toBe(false);
+  });
+
+  test("reads spectator rating capability from access tokens", () => {
+    const spectator = `header.${btoa(JSON.stringify({ can_rate: true }))}.signature`;
+    const otherUser = `header.${btoa(JSON.stringify({ can_rate: false }))}.signature`;
+
+    expect(canRateFromToken(spectator)).toBe(true);
+    expect(canRateFromToken(otherUser)).toBe(false);
+    expect(canRateFromToken("invalid-token")).toBe(false);
   });
 
   test("trims profile fields before registration", async () => {

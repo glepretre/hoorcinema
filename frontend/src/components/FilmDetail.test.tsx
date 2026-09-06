@@ -70,14 +70,15 @@ function renderDetail(
         backLabel={backLabel}
         isAuthenticated={isAuthenticated}
         onBack={onBack}
+        onLogin={vi.fn()}
       />
     </QueryClientProvider>,
   );
   return onBack;
 }
 
-function accessToken(canChangeFilm: boolean): string {
-  return `header.${btoa(JSON.stringify({ can_change_film: canChangeFilm }))}.signature`;
+function accessToken(canChangeFilm: boolean, canRate = true): string {
+  return `header.${btoa(JSON.stringify({ can_change_film: canChangeFilm, can_rate: canRate }))}.signature`;
 }
 
 async function confirmAction(name: "Archiver" | "Désarchiver") {
@@ -232,6 +233,19 @@ describe("film detail", () => {
 
     expect(screen.queryByRole("button", { name: "Archiver" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Désarchiver" })).toBeNull();
+  });
+
+  test("hides rating actions without the spectator capability", async () => {
+    useAuthStore.getState().setTokens({
+      access: accessToken(true, false),
+      refresh: "refresh-token",
+    });
+    renderDetail();
+
+    await screen.findByRole("heading", { name: "Cinema Paradiso" });
+
+    expect(screen.queryByRole("button", { name: /^Noter/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Archiver" })).toBeTruthy();
   });
 
   test("hides all mutation actions from anonymous users", async () => {

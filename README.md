@@ -163,7 +163,8 @@ The interface is in French and supports desktop and mobile layouts.
   sorting, and pagination with 10, 50, or 100 films per page.
 - `/films/archives/` provides the same controls for archived films.
 - `/films/{id}/` displays a public film detail page.
-- Authenticated spectators can rate films and authors from a film detail page.
+- Authenticated spectators whose JWT advertises `can_rate` can rate films and
+  authors from a film detail page.
 - Staff users whose JWT advertises `can_change_film` can archive and unarchive
   films; Django still checks the permission for every request.
 - Favorites and administrative film or author editing are available through the
@@ -242,9 +243,10 @@ curl --request POST http://localhost:8000/api/auth/login/ \
 
 Access tokens are valid for 5 minutes and refresh tokens for 1 day. Tokens use
 HS256 with Django's secret key. Their standard claims include `token_type`,
-`exp`, `iat`, `jti`, and `user_id`. Hoorcinema also adds `can_change_film`, a UI
-capability hint that is true only for staff with `cinema.change_film`; it never
-replaces server-side authorization.
+`exp`, `iat`, `jti`, and `user_id`. Hoorcinema also adds `can_change_film` and
+`can_rate` as UI capability hints. They respectively represent staff with
+`cinema.change_film` and users in the spectator group; they never replace
+server-side authorization.
 
 ### Refresh And Logout
 
@@ -258,8 +260,8 @@ curl --request POST http://localhost:8000/api/auth/refresh/ \
 ```
 
 Rotation blacklists the submitted refresh token and recalculates
-`can_change_film` from the current user. Store the replacement refresh token;
-reusing the previous token returns `401`.
+`can_change_film` and `can_rate` from the current user. Store the replacement
+refresh token; reusing the previous token returns `401`.
 
 `POST /api/auth/logout/` blacklists the submitted refresh token and returns
 `200`. It does not require an access token:

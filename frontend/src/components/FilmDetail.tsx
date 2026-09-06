@@ -5,7 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../api/client";
 import { archiveFilm, getFilm, unarchiveFilm } from "../api/films";
 import { rateAuthor, rateFilm } from "../api/ratings";
-import { canChangeFilmFromToken, useAuthStore } from "../store/auth";
+import {
+  canChangeFilmFromToken,
+  canRateFromToken,
+  useAuthStore,
+} from "../store/auth";
 import { localRating, posterUrl, statusLabels } from "./filmPresentation";
 import { RatingPopover } from "./RatingPopover";
 
@@ -16,6 +20,7 @@ interface FilmDetailProps {
   backLabel?: string;
   isAuthenticated: boolean;
   onBack: () => void;
+  onLogin: () => void;
 }
 
 function authorName(author: {
@@ -60,6 +65,7 @@ export function FilmDetail({
   backLabel = "Retour au catalogue",
   isAuthenticated,
   onBack,
+  onLogin,
 }: FilmDetailProps) {
   const queryClient = useQueryClient();
   const archivalPending = useRef(false);
@@ -68,6 +74,7 @@ export function FilmDetail({
   const canChangeFilm = useAuthStore((state) =>
     canChangeFilmFromToken(state.accessToken),
   );
+  const canRate = useAuthStore((state) => canRateFromToken(state.accessToken));
   const filmQuery = useQuery({
     queryKey: ["films", "detail", filmId],
     queryFn: () => getFilm(filmId),
@@ -143,9 +150,7 @@ export function FilmDetail({
   const imageUrl = posterUrl(film.poster_path, "w500");
   const handleRated = (subject: string, score: number) => {
     setSuccessToast(`${subject} noté ${score} / 5`);
-    void queryClient.invalidateQueries({
-      queryKey: ["films", "detail", filmId],
-    });
+    void queryClient.invalidateQueries({ queryKey: ["films"] });
   };
 
   return (
@@ -175,6 +180,8 @@ export function FilmDetail({
           >
             {film.is_archived ? "Désarchiver" : "Archiver"}
           </Button>
+        ) : !isAuthenticated ? (
+          <Button onClick={onLogin}>Se connecter</Button>
         ) : null}
       </header>
 
@@ -246,7 +253,7 @@ export function FilmDetail({
                 {localRating(film.local_rating)}
               </Text>
               <Text className="rating-label">Note Hoorcinema</Text>
-              {isAuthenticated ? (
+              {canRate ? (
                 <RatingPopover
                   label={`Noter ${film.title}`}
                   onRate={(score) => rateFilm(film.id, score)}
@@ -302,7 +309,7 @@ export function FilmDetail({
                       <Text className="author-rating">
                         {localRating(author.local_rating)}
                       </Text>
-                      {isAuthenticated ? (
+                      {canRate ? (
                         <RatingPopover
                           label={`Noter ${authorName(author)}`}
                           onRate={(score) => rateAuthor(author.id, score)}

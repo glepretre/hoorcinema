@@ -13,7 +13,10 @@ interface AuthState {
   clearTokens: () => void;
 }
 
-export function canChangeFilmFromToken(accessToken: string | null): boolean {
+function capabilityFromToken(
+  accessToken: string | null,
+  capability: "can_change_film" | "can_rate",
+): boolean {
   if (!accessToken) {
     return false;
   }
@@ -24,11 +27,19 @@ export function canChangeFilmFromToken(accessToken: string | null): boolean {
       return false;
     }
     const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const decoded = JSON.parse(atob(base64)) as { can_change_film?: unknown };
-    return decoded.can_change_film === true;
+    const decoded = JSON.parse(atob(base64)) as Record<string, unknown>;
+    return decoded[capability] === true;
   } catch {
     return false;
   }
+}
+
+export function canChangeFilmFromToken(accessToken: string | null): boolean {
+  return capabilityFromToken(accessToken, "can_change_film");
+}
+
+export function canRateFromToken(accessToken: string | null): boolean {
+  return capabilityFromToken(accessToken, "can_rate");
 }
 
 export const useAuthStore = create<AuthState>()(

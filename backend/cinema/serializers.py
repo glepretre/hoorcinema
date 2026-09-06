@@ -2,6 +2,7 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import (
     TokenObtainPairSerializer,
     TokenRefreshSerializer,
@@ -17,18 +18,22 @@ class CinemaTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token["can_change_film"] = user.is_staff and user.has_perm("cinema.change_film")
+        token["can_rate"] = user.groups.filter(name=SPECTATOR_GROUP).exists()
         return token
 
 
 class CinemaTokenRefreshSerializer(TokenRefreshSerializer):
     def validate(self, attrs):
         refresh = self.token_class(attrs["refresh"])
-        user = User.objects.get(
+        user = User.objects.filter(
             **{api_settings.USER_ID_FIELD: refresh[api_settings.USER_ID_CLAIM]}
-        )
+        ).first()
+        if user is None or not user.is_active:
+            raise AuthenticationFailed("User is not active or no longer exists.")
         refresh["can_change_film"] = user.is_staff and user.has_perm(
             "cinema.change_film"
         )
+        refresh["can_rate"] = user.groups.filter(name=SPECTATOR_GROUP).exists()
         return super().validate({**attrs, "refresh": str(refresh)})
 
 
@@ -147,6 +152,7 @@ class FilmWriteSerializer(serializers.ModelSerializer):
         )
 
     def to_representation(self, instance):
+        instance = self.context["view"].get_queryset().get(pk=instance.pk)
         return FilmSerializer(instance, context=self.context).data
 
 
@@ -166,6 +172,7 @@ class AuthorWriteSerializer(serializers.ModelSerializer):
         )
 
     def to_representation(self, instance):
+        instance = self.context["view"].get_queryset().get(pk=instance.pk)
         return AuthorSerializer(instance, context=self.context).data
 
 

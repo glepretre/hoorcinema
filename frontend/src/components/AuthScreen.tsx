@@ -38,7 +38,13 @@ export function AuthScreen({
   onModeChange,
 }: AuthScreenProps) {
   const [registered, setRegistered] = useState(false);
-  const registerMutation = useMutation({ mutationFn: registerSpectator });
+  const registerMutation = useMutation({
+    mutationFn: registerSpectator,
+    onSuccess: () => {
+      setRegistered(true);
+      onModeChange("login");
+    },
+  });
   const loginMutation = useMutation({ mutationFn: login, onSuccess: onLogin });
   const isRegister = mode === "register";
   const activeMutation = isRegister ? registerMutation : loginMutation;
@@ -48,12 +54,6 @@ export function AuthScreen({
     setRegistered(false);
     registerMutation.reset();
     loginMutation.reset();
-  }
-
-  async function submitRegistration(values: RegistrationData) {
-    await registerMutation.mutateAsync(values);
-    setRegistered(true);
-    onModeChange("login");
   }
 
   return (
@@ -107,7 +107,7 @@ export function AuthScreen({
               key="register"
               layout="vertical"
               requiredMark={false}
-              onFinish={submitRegistration}
+              onFinish={(values) => registerMutation.mutate(values)}
             >
               <div className="name-fields">
                 <Form.Item label="Prénom" name="first_name">

@@ -205,6 +205,7 @@ describe("film navigation", () => {
     ).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^Noter/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "Archiver" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Se connecter" })).toBeTruthy();
   });
 
   test("sends an anonymous catalogue user to login", async () => {
