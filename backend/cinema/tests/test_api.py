@@ -187,6 +187,29 @@ def test_film_filters_search_and_ordering(catalogue):
 
 
 @pytest.mark.django_db
+def test_film_list_filters_archived_films_and_excludes_them_by_default(catalogue):
+    archived_film = Film.objects.create(
+        title="Archived Feature",
+        status=Film.Status.RELEASED,
+        is_archived=True,
+    )
+    client = APIClient()
+
+    default_response = client.get(reverse("film-list"))
+    active_response = client.get(reverse("film-list"), {"is_archived": "false"})
+    archived_response = client.get(reverse("film-list"), {"is_archived": "true"})
+
+    assert default_response.status_code == 200
+    assert default_response.json()["count"] == 3
+    assert all(not film["is_archived"] for film in default_response.json()["results"])
+    assert active_response.json()["count"] == 3
+    assert all(not film["is_archived"] for film in active_response.json()["results"])
+    assert archived_response.status_code == 200
+    assert archived_response.json()["count"] == 1
+    assert archived_response.json()["results"][0]["id"] == archived_film.pk
+
+
+@pytest.mark.django_db
 def test_author_source_search_and_ordering(catalogue):
     response = APIClient().get(
         reverse("author-list"),
@@ -212,6 +235,7 @@ def test_list_pagination_supports_page_and_bounded_page_size(catalogue):
     [
         ("film-list", {"status": "INVALID"}, "status"),
         ("film-list", {"source": "INVALID"}, "source"),
+        ("film-list", {"is_archived": "INVALID"}, "is_archived"),
         ("author-list", {"source": "INVALID"}, "source"),
     ],
 )

@@ -38,13 +38,13 @@ const film: Film = {
   updated_at: "2026-01-01T10:00:00Z",
 };
 
-function renderDetail(onBack = vi.fn()) {
+function renderDetail(onBack = vi.fn(), backLabel?: string) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   render(
     <QueryClientProvider client={queryClient}>
-      <FilmDetail filmId={7} onBack={onBack} />
+      <FilmDetail filmId={7} backLabel={backLabel} onBack={onBack} />
     </QueryClientProvider>,
   );
   return onBack;
@@ -88,6 +88,15 @@ describe("film detail", () => {
     );
 
     expect(onBack).toHaveBeenCalledOnce();
+  });
+
+  test("uses the provided archived catalogue return label", async () => {
+    renderDetail(vi.fn(), "Retour aux films archivés");
+    await screen.findByRole("heading", { name: "Cinema Paradiso" });
+
+    expect(
+      screen.getByRole("button", { name: /Retour aux films archivés/ }),
+    ).toBeTruthy();
   });
 
   test("shows a dedicated not-found state", async () => {

@@ -51,13 +51,17 @@ const catalogueControlsTheme: ThemeConfig = {
 };
 
 interface FilmCatalogueProps {
+  isArchived: boolean;
   isLoggingOut?: boolean;
+  onChangeCatalogue: () => void;
   onLogout: () => void;
   onSelectFilm: (filmId: number) => void;
 }
 
 export function FilmCatalogue({
+  isArchived,
   isLoggingOut = false,
+  onChangeCatalogue,
   onLogout,
   onSelectFilm,
 }: FilmCatalogueProps) {
@@ -71,8 +75,15 @@ export function FilmCatalogue({
   const setPageSize = useCatalogueStore((state) => state.setPageSize);
   const [ordering, setOrdering] = useState<FilmOrdering>("title");
   const params = useMemo(
-    () => ({ page, pageSize, search: search || undefined, status, ordering }),
-    [ordering, page, pageSize, search, status],
+    () => ({
+      page,
+      pageSize,
+      isArchived,
+      search: search || undefined,
+      status,
+      ordering,
+    }),
+    [isArchived, ordering, page, pageSize, search, status],
   );
   const filmsQuery = useQuery({
     queryKey: ["films", params],
@@ -141,30 +152,41 @@ export function FilmCatalogue({
       <header className="catalogue-header">
         <div>
           <Text className="eyebrow">HOORCINEMA</Text>
-          <Title>Films à l’affiche</Title>
+          <Title>{isArchived ? "Films archivés" : "Films à l’affiche"}</Title>
           <Paragraph className="text-on-dark">
-            Parcourez la collection, des nouveautés aux classiques.
+            {isArchived
+              ? "Retrouvez les films conservés dans les archives."
+              : "Parcourez la collection, des nouveautés aux classiques."}
           </Paragraph>
         </div>
-        <Button loading={isLoggingOut} onClick={onLogout}>
-          Se déconnecter
-        </Button>
+        <div className="catalogue-header-actions">
+          <Button loading={isLoggingOut} onClick={onLogout}>
+            Se déconnecter
+          </Button>
+        </div>
       </header>
 
       <section className="catalogue-content" aria-labelledby="catalogue-title">
         <div className="catalogue-heading">
           <div>
-            <Text className="section-number">01 / CATALOGUE</Text>
+            <Text className="section-number">
+              {isArchived ? "02 / ARCHIVES" : "01 / CATALOGUE"}
+            </Text>
             <Title id="catalogue-title" level={2}>
-              La sélection
+              {isArchived ? "La collection archivée" : "La sélection"}
             </Title>
           </div>
-          {filmsQuery.data && (
-            <Text className="film-count">
-              {filmsQuery.data.count} film
-              {filmsQuery.data.count > 1 ? "s" : ""}
-            </Text>
-          )}
+          <div className="catalogue-heading-actions">
+            {filmsQuery.data && (
+              <Text className="film-count">
+                {filmsQuery.data.count} film
+                {filmsQuery.data.count > 1 ? "s" : ""}
+              </Text>
+            )}
+            <Button onClick={onChangeCatalogue}>
+              {isArchived ? "Retour au catalogue" : "Films archivés"}
+            </Button>
+          </div>
         </div>
 
         <ConfigProvider theme={catalogueControlsTheme}>
@@ -227,7 +249,11 @@ export function FilmCatalogue({
           <Alert
             type="error"
             showIcon
-            title="Impossible de charger le catalogue."
+            title={
+              isArchived
+                ? "Impossible de charger les films archivés."
+                : "Impossible de charger le catalogue."
+            }
             description="Vérifiez votre connexion puis réessayez."
             action={
               <Button onClick={() => filmsQuery.refetch()}>Réessayer</Button>
@@ -242,7 +268,13 @@ export function FilmCatalogue({
               dataSource={filmsQuery.data.results}
               locale={{
                 emptyText: (
-                  <Empty description="Aucun film ne correspond à votre recherche." />
+                  <Empty
+                    description={
+                      isArchived
+                        ? "Aucun film archivé"
+                        : "Aucun film ne correspond à votre recherche."
+                    }
+                  />
                 ),
               }}
               pagination={false}

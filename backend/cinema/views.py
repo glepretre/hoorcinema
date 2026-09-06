@@ -5,7 +5,11 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from cinema.filters import ExactChoiceFilterBackend, NullsLastOrderingFilter
+from cinema.filters import (
+    BooleanFilterBackend,
+    ExactChoiceFilterBackend,
+    NullsLastOrderingFilter,
+)
 from cinema.models import Author, AuthorRating, Favorite, Film, FilmRating, User
 from cinema.permissions import IsSpectator, StaffDjangoModelPermissions
 from cinema.serializers import (
@@ -46,10 +50,13 @@ class FilmListView(FilmQuerysetMixin, generics.ListAPIView):
     permission_classes = (AllowAny,)
     pagination_class = CinemaPagination
     filter_backends = (
+        BooleanFilterBackend,
         ExactChoiceFilterBackend,
         filters.SearchFilter,
         NullsLastOrderingFilter,
     )
+    boolean_filter_fields = ("is_archived",)
+    boolean_filter_defaults = {"is_archived": False}
     choice_filter_fields = ("status", "source")
     search_fields = ("title",)
     ordering_fields = ("release_date", "local_rating", "title")

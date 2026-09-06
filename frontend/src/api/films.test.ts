@@ -13,11 +13,18 @@ describe("film API", () => {
         pageSize: 50,
         search: "Cinéma Paradiso",
         status: "In Production",
+        isArchived: true,
         ordering: "-local_rating",
       }),
     ).toBe(
-      "/api/films/?page=3&page_size=50&search=Cin%C3%A9ma+Paradiso&status=In+Production&ordering=-local_rating",
+      "/api/films/?page=3&page_size=50&search=Cin%C3%A9ma+Paradiso&status=In+Production&is_archived=true&ordering=-local_rating",
     );
+  });
+
+  test("includes the active films filter", () => {
+    expect(
+      buildFilmListPath({ page: 1, pageSize: 10, isArchived: false }),
+    ).toBe("/api/films/?page=1&page_size=10&is_archived=false");
   });
 
   test("omits inactive filters", () => {

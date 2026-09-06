@@ -13,6 +13,9 @@ export function buildFilmListPath(params: FilmListParams): string {
   if (params.status) {
     query.set("status", params.status);
   }
+  if (params.isArchived !== undefined) {
+    query.set("is_archived", String(params.isArchived));
+  }
   if (params.ordering) {
     query.set("ordering", params.ordering);
   }

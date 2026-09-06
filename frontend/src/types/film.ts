@@ -49,6 +49,7 @@ export interface PaginatedFilms {
 export interface FilmListParams {
   page: number;
   pageSize: FilmPageSize;
+  isArchived?: boolean;
   search?: string;
   status?: FilmStatus;
   ordering?: FilmOrdering;

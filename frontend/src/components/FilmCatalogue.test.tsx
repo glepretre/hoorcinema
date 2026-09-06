@@ -42,13 +42,18 @@ const response: PaginatedFilms = {
 
 const onSelectFilm = vi.fn();
 
-function renderCatalogue() {
+function renderCatalogue(isArchived = false) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <FilmCatalogue onLogout={vi.fn()} onSelectFilm={onSelectFilm} />
+      <FilmCatalogue
+        isArchived={isArchived}
+        onChangeCatalogue={vi.fn()}
+        onLogout={vi.fn()}
+        onSelectFilm={onSelectFilm}
+      />
     </QueryClientProvider>,
   );
 }
@@ -110,6 +115,7 @@ describe("film catalogue", () => {
       expect(filmsApi.getFilms).toHaveBeenLastCalledWith({
         page: 1,
         pageSize: 10,
+        isArchived: false,
         search: "paradis",
         status: undefined,
         ordering: "title",
@@ -180,6 +186,23 @@ describe("film catalogue", () => {
     renderCatalogue();
     expect(
       await screen.findByText("Impossible de charger le catalogue."),
+    ).toBeTruthy();
+  });
+
+  test("reuses the catalogue controls for archived films", async () => {
+    renderCatalogue(true);
+
+    expect(
+      await screen.findByRole("heading", { name: "Films archivés" }),
+    ).toBeTruthy();
+    expect(screen.getByLabelText("Rechercher un film")).toBeTruthy();
+    expect(screen.getByLabelText("Filtrer par statut")).toBeTruthy();
+    expect(screen.getByLabelText("Trier les films")).toBeTruthy();
+    expect(filmsApi.getFilms).toHaveBeenLastCalledWith(
+      expect.objectContaining({ isArchived: true }),
+    );
+    expect(
+      screen.getByRole("button", { name: "Retour au catalogue" }),
     ).toBeTruthy();
   });
 });

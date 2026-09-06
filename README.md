@@ -84,7 +84,7 @@ Returns a lightweight application liveness status:
 
 ### Endpoints
 
-- `GET /api/films/` and `GET /api/films/{id}/`: public film list and detail.
+- `GET /api/films/` and `GET /api/films/{id}/`: public film list and detail. The list accepts `is_archived=true|false` and returns active films by default.
 - `GET /api/authors/` and `GET /api/authors/{id}/`: public author list and detail.
 - `PATCH /api/films/{id}/`: update a film as staff with `cinema.change_film`.
 - `PATCH /api/films/{id}/archive/`: archive a film as staff with `cinema.change_film`.

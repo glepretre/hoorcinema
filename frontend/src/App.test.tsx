@@ -119,6 +119,59 @@ describe("film navigation", () => {
     expect(filmsApi.getFilms).not.toHaveBeenCalled();
     expect(useCatalogueStore.getState().selectedFilmId).toBe(7);
   });
+
+  test("loads archived films directly and returns there from a detail", async () => {
+    history.replaceState(null, "", "/films/archives/");
+    useAuthStore.getState().setTokens({ access: "access", refresh: "refresh" });
+    vi.mocked(filmsApi.getFilms).mockResolvedValue({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [{ ...film, is_archived: true }],
+    });
+
+    renderApp();
+
+    expect(
+      await screen.findByRole("heading", { name: "Films archivés" }),
+    ).toBeTruthy();
+    expect(filmsApi.getFilms).toHaveBeenLastCalledWith(
+      expect.objectContaining({ isArchived: true }),
+    );
+
+    fireEvent.click(await screen.findByLabelText("Voir Cinema Paradiso"));
+    expect(location.pathname).toBe("/films/7/");
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: /Retour aux films archivés/,
+      }),
+    );
+
+    expect(location.pathname).toBe("/films/archives/");
+    expect(
+      await screen.findByRole("heading", { name: "Films archivés" }),
+    ).toBeTruthy();
+  });
+
+  test("navigates between active and archived catalogues", async () => {
+    useAuthStore.getState().setTokens({ access: "access", refresh: "refresh" });
+    renderApp();
+
+    await screen.findByRole("heading", { name: "Films à l’affiche" });
+    expect(filmsApi.getFilms).toHaveBeenLastCalledWith(
+      expect.objectContaining({ isArchived: false }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Films archivés" }));
+
+    expect(location.pathname).toBe("/films/archives/");
+    expect(
+      await screen.findByRole("heading", { name: "Films archivés" }),
+    ).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Retour au catalogue" }),
+    );
+    expect(location.pathname).toBe("/");
+  });
 });
 
 describe("authentication screen", () => {

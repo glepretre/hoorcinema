@@ -178,7 +178,12 @@ body {
   font-size: 18px;
 }
 
-.catalogue-header > .ant-btn {
+.catalogue-header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.catalogue-header-actions .ant-btn {
   border-color: rgb(245 239 228 / 32%);
   color: #f5efe4;
   background: rgb(17 16 15 / 36%);
@@ -198,6 +203,12 @@ body {
   align-items: flex-end;
   justify-content: space-between;
   margin-bottom: 28px;
+}
+
+.catalogue-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .section-number.ant-typography,
@@ -592,10 +603,12 @@ body {
     padding: 34px 20px 66px;
   }
 
-  .catalogue-header > .ant-btn {
+  .catalogue-header-actions {
     position: absolute;
     top: 28px;
     right: 20px;
+    left: 20px;
+    justify-content: flex-end;
   }
 
   .catalogue-header .eyebrow {

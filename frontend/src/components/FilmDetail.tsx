@@ -9,6 +9,7 @@ const { Paragraph, Text, Title } = Typography;
 
 interface FilmDetailProps {
   filmId: number;
+  backLabel?: string;
   onBack: () => void;
 }
 
@@ -23,7 +24,11 @@ function authorName(author: {
   );
 }
 
-export function FilmDetail({ filmId, onBack }: FilmDetailProps) {
+export function FilmDetail({
+  filmId,
+  backLabel = "Retour au catalogue",
+  onBack,
+}: FilmDetailProps) {
   const filmQuery = useQuery({
     queryKey: ["films", "detail", filmId],
     queryFn: () => getFilm(filmId),
@@ -56,7 +61,7 @@ export function FilmDetail({ filmId, onBack }: FilmDetailProps) {
           }
           action={
             notFound ? (
-              <Button onClick={onBack}>Retour au catalogue</Button>
+              <Button onClick={onBack}>{backLabel}</Button>
             ) : (
               <Button onClick={() => filmQuery.refetch()}>Réessayer</Button>
             )
@@ -78,7 +83,7 @@ export function FilmDetail({ filmId, onBack }: FilmDetailProps) {
       />
       <header className="detail-navigation">
         <Button className="detail-back" onClick={onBack}>
-          ← Retour au catalogue
+          ← {backLabel}
         </Button>
       </header>
 
