@@ -1,36 +1,37 @@
-import { useQuery } from "@tanstack/react-query";
-import { Alert, Spin, Typography } from "antd";
+import { useMutation } from "@tanstack/react-query";
+import { Button, Typography } from "antd";
 
-import { getHello } from "./api/hello";
+import { logout } from "./api/auth";
+import { AuthScreen } from "./components/AuthScreen";
+import { useAuthStore } from "./store/auth";
 
-const { Title } = Typography;
+const { Paragraph, Title } = Typography;
 
 export default function App() {
-  const helloQuery = useQuery({
-    queryKey: ["hello"],
-    queryFn: getHello,
-  });
+  const isAuthenticated = useAuthStore((state) => state.accessToken !== null);
+  const logoutMutation = useMutation({ mutationFn: logout });
+
+  if (!isAuthenticated) {
+    return <AuthScreen />;
+  }
 
   return (
-    <main className="page-shell">
-      <section className="hero" aria-labelledby="page-title">
-        <Title id="page-title">Hoorcinema</Title>
-        <div className="hello-output" aria-live="polite">
-          {helloQuery.isPending && <Spin size="small" />}
-          {helloQuery.isError && (
-            <Alert
-              type="error"
-              showIcon
-              message="Connection failed"
-              description={helloQuery.error.message}
-            />
-          )}
-          {helloQuery.data && (
-            <Title level={2} className="hello-message">
-              {helloQuery.data.message}
-            </Title>
-          )}
-        </div>
+    <main className="session-page">
+      <section aria-labelledby="session-title">
+        <Typography.Text className="eyebrow">HOORCINEMA</Typography.Text>
+        <Title id="session-title">Votre séance peut commencer.</Title>
+        <Paragraph className="session-copy">
+          Vous êtes connecté. Le catalogue de films arrive à l’étape suivante.
+        </Paragraph>
+        <Button
+          className="logout-button"
+          type="primary"
+          size="large"
+          loading={logoutMutation.isPending}
+          onClick={() => logoutMutation.mutate()}
+        >
+          Se déconnecter
+        </Button>
       </section>
     </main>
   );

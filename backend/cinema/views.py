@@ -204,8 +204,3 @@ class AuthorRatingView(generics.GenericAPIView):
 @api_view(["GET"])
 def health(request):
     return Response({"status": "ok"})
-
-
-@api_view(["GET"])
-def hello(request):
-    return Response({"message": "Hello, World!"})

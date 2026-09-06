@@ -19,7 +19,6 @@ The services are available at:
 
 - Web application: <http://localhost:5173>
 - Health API: <http://localhost:8000/api/health/>
-- Hello API: <http://localhost:8000/api/hello/>
 - Django administration: <http://localhost:8000/admin/>
 
 The backend waits for PostgreSQL, applies migrations, and starts Django. Create an administrator with:
@@ -80,14 +79,6 @@ Returns a lightweight application liveness status:
 
 ```json
 {"status": "ok"}
-```
-
-### `GET /api/hello/`
-
-Returns the message displayed by the frontend:
-
-```json
-{"message": "Hello, World!"}
 ```
 
 ### Endpoints

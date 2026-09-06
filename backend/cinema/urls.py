@@ -17,12 +17,10 @@ from cinema.views import (
     FilmRatingView,
     RegisterView,
     health,
-    hello,
 )
 
 urlpatterns = [
     path("health/", health, name="health"),
-    path("hello/", hello, name="hello"),
     path("auth/register/", RegisterView.as_view(), name="auth-register"),
     path("auth/login/", TokenObtainPairView.as_view(), name="auth-login"),
     path("auth/refresh/", TokenRefreshView.as_view(), name="auth-refresh"),
