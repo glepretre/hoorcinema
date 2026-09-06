@@ -18,9 +18,15 @@ import { useMemo, useState } from "react";
 import { getFilms } from "../api/films";
 import { useCatalogueStore } from "../store/catalogue";
 import type { Film, FilmOrdering, FilmStatus } from "../types/film";
+import {
+  localRating,
+  posterUrl,
+  releaseYear,
+  statusColors,
+  statusLabels,
+} from "./filmPresentation";
 
 const { Paragraph, Text, Title } = Typography;
-const POSTER_BASE_URL = "https://image.tmdb.org/t/p/w185";
 const catalogueControlsTheme: ThemeConfig = {
   token: {
     colorBorder: "#746b63",
@@ -38,47 +44,16 @@ const catalogueControlsTheme: ThemeConfig = {
   },
 };
 
-const statusLabels: Record<FilmStatus, string> = {
-  Rumored: "Rumeur",
-  Planned: "Prévu",
-  "In Production": "En production",
-  "Post Production": "En post-production",
-  Released: "Sorti",
-  Canceled: "Annulé",
-};
-
-const statusColors: Record<FilmStatus, string> = {
-  Rumored: "purple",
-  Planned: "blue",
-  "In Production": "cyan",
-  "Post Production": "geekblue",
-  Released: "green",
-  Canceled: "default",
-};
-
-function posterUrl(path: string): string | undefined {
-  if (!path) {
-    return undefined;
-  }
-  return path.startsWith("http") ? path : `${POSTER_BASE_URL}${path}`;
-}
-
-function releaseYear(date: string | null): string {
-  return date ? date.slice(0, 4) : "Date inconnue";
-}
-
-function localRating(rating: string | null): string {
-  return rating ? `${Number(rating).toLocaleString("fr-FR")} / 5` : "Non noté";
-}
-
 interface FilmCatalogueProps {
   isLoggingOut?: boolean;
   onLogout: () => void;
+  onSelectFilm: (filmId: number) => void;
 }
 
 export function FilmCatalogue({
   isLoggingOut = false,
   onLogout,
+  onSelectFilm,
 }: FilmCatalogueProps) {
   const search = useCatalogueStore((state) => state.search);
   const status = useCatalogueStore((state) => state.status);
@@ -86,9 +61,6 @@ export function FilmCatalogue({
   const setSearch = useCatalogueStore((state) => state.setSearch);
   const setStatus = useCatalogueStore((state) => state.setStatus);
   const setPage = useCatalogueStore((state) => state.setPage);
-  const setSelectedFilmId = useCatalogueStore(
-    (state) => state.setSelectedFilmId,
-  );
   const [ordering, setOrdering] = useState<FilmOrdering>("title");
   const params = useMemo(
     () => ({ page, search: search || undefined, status, ordering }),
@@ -274,12 +246,12 @@ export function FilmCatalogue({
             }}
             scroll={{ x: 560 }}
             onRow={(film) => ({
-              onClick: () => setSelectedFilmId(film.id),
+              onClick: () => onSelectFilm(film.id),
               tabIndex: 0,
               onKeyDown: (event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  setSelectedFilmId(film.id);
+                  onSelectFilm(film.id);
                 }
               },
               "aria-label": `Voir ${film.title}`,

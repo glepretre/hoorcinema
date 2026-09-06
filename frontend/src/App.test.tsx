@@ -12,6 +12,8 @@ import App from "./App";
 import * as authApi from "./api/auth";
 import * as filmsApi from "./api/films";
 import { useAuthStore } from "./store/auth";
+import { useCatalogueStore } from "./store/catalogue";
+import type { Film } from "./types/film";
 
 vi.mock("./api/auth", async (importOriginal) => {
   const original = await importOriginal<typeof import("./api/auth")>();
@@ -23,7 +25,25 @@ vi.mock("./api/auth", async (importOriginal) => {
   };
 });
 
-vi.mock("./api/films", () => ({ getFilms: vi.fn() }));
+vi.mock("./api/films", () => ({ getFilms: vi.fn(), getFilm: vi.fn() }));
+
+const film: Film = {
+  id: 7,
+  title: "Cinema Paradiso",
+  description: "Un cinéaste se souvient de son enfance.",
+  release_date: "1988-11-17",
+  status: "Released",
+  is_archived: false,
+  authors: [],
+  source: "TMDB",
+  tmdb_id: 11216,
+  tmdb_vote_average: "8.40",
+  tmdb_vote_count: 4500,
+  poster_path: "/cinema-paradiso.jpg",
+  local_rating: "4.50",
+  created_at: "2026-01-01T10:00:00Z",
+  updated_at: "2026-01-01T10:00:00Z",
+};
 
 function renderApp() {
   const queryClient = new QueryClient({
@@ -41,18 +61,64 @@ function renderApp() {
 }
 
 beforeEach(() => {
+  history.replaceState(null, "", "/");
   useAuthStore.getState().clearTokens();
+  useCatalogueStore.getState().reset();
   vi.mocked(filmsApi.getFilms).mockResolvedValue({
     count: 0,
     next: null,
     previous: null,
     results: [],
   });
+  vi.mocked(filmsApi.getFilm).mockResolvedValue(film);
 });
 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+});
+
+describe("film navigation", () => {
+  test("opens a film URL from the catalogue and returns", async () => {
+    useAuthStore.getState().setTokens({ access: "access", refresh: "refresh" });
+    vi.mocked(filmsApi.getFilms).mockResolvedValue({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [film],
+    });
+    renderApp();
+
+    fireEvent.click(await screen.findByLabelText("Voir Cinema Paradiso"));
+
+    expect(location.pathname).toBe("/films/7/");
+    expect(useCatalogueStore.getState().selectedFilmId).toBe(7);
+    expect(
+      await screen.findByRole("heading", { name: "Cinema Paradiso" }),
+    ).toBeTruthy();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Retour au catalogue/ }),
+    );
+    expect(location.pathname).toBe("/");
+    expect(
+      await screen.findByRole("heading", { name: "Films à l’affiche" }),
+    ).toBeTruthy();
+  });
+
+  test("loads a film directly from its URL", async () => {
+    history.replaceState(null, "", "/films/7/");
+    useAuthStore.getState().setTokens({ access: "access", refresh: "refresh" });
+
+    renderApp();
+
+    expect(
+      await screen.findByRole("heading", { name: "Cinema Paradiso" }),
+    ).toBeTruthy();
+    expect(filmsApi.getFilm).toHaveBeenCalledWith(7);
+    expect(filmsApi.getFilms).not.toHaveBeenCalled();
+    expect(useCatalogueStore.getState().selectedFilmId).toBe(7);
+  });
 });
 
 describe("authentication screen", () => {

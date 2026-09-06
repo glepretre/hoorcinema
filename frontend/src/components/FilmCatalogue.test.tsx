@@ -40,13 +40,15 @@ const response: PaginatedFilms = {
   results: [film],
 };
 
+const onSelectFilm = vi.fn();
+
 function renderCatalogue() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <FilmCatalogue onLogout={vi.fn()} />
+      <FilmCatalogue onLogout={vi.fn()} onSelectFilm={onSelectFilm} />
     </QueryClientProvider>,
   );
 }
@@ -88,7 +90,7 @@ describe("film catalogue", () => {
     fireEvent.keyDown(screen.getByLabelText("Voir Cinema Paradiso"), {
       key: "Enter",
     });
-    expect(useCatalogueStore.getState().selectedFilmId).toBe(7);
+    expect(onSelectFilm).toHaveBeenCalledWith(7);
   });
 
   test("sends search, status, and ordering parameters while resetting the page", async () => {
