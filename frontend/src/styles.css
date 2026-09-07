@@ -61,6 +61,7 @@ body {
   color: #f5efe4;
   background: #d85b36;
   font-weight: 700;
+  z-index: 5;
 }
 
 .auth-story .browse-catalogue.ant-btn:hover {
