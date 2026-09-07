@@ -121,7 +121,9 @@ def test_adding_and_removing_a_favorite_are_idempotent(interactions):
     repeated = client.post(url, {}, format="json")
 
     assert created.status_code == 201
+    assert created.json()["is_favorite"] is True
     assert repeated.status_code == 200
+    assert repeated.json()["is_favorite"] is True
     assert (
         Favorite.objects.filter(
             spectator=interactions["spectator"], film=interactions["film"]
@@ -155,6 +157,59 @@ def test_favorite_list_is_paginated_and_isolated_by_spectator(interactions):
     assert response.json()["count"] == 1
     assert [film["title"] for film in response.json()["results"]] == [
         "Current Favorite"
+    ]
+    assert response.json()["results"][0]["is_favorite"] is True
+
+
+@pytest.mark.django_db
+def test_film_detail_exposes_favorite_state_for_current_spectator(interactions):
+    Favorite.objects.create(
+        spectator=interactions["spectator"], film=interactions["film"]
+    )
+    url = reverse("film-detail", args=(interactions["film"].pk,))
+
+    favorite_response = authenticated_client(interactions["spectator"]).get(url)
+    other_response = authenticated_client(interactions["other_spectator"]).get(url)
+    anonymous_response = APIClient().get(url)
+
+    assert favorite_response.json()["is_favorite"] is True
+    assert other_response.json()["is_favorite"] is False
+    assert anonymous_response.json()["is_favorite"] is False
+
+
+@pytest.mark.django_db
+def test_favorite_list_supports_catalogue_search_filter_and_ordering(interactions):
+    released = interactions["film"]
+    released.status = Film.Status.RELEASED
+    released.release_date = "2020-01-01"
+    released.save()
+    planned = Film.objects.create(
+        title="Another Favorite",
+        status=Film.Status.PLANNED,
+        release_date="2030-01-01",
+    )
+    Favorite.objects.bulk_create(
+        [
+            Favorite(spectator=interactions["spectator"], film=released),
+            Favorite(spectator=interactions["spectator"], film=planned),
+        ]
+    )
+    client = authenticated_client(interactions["spectator"])
+    url = reverse("favorite-list")
+
+    searched = client.get(url, {"search": "another"})
+    filtered = client.get(url, {"status": Film.Status.RELEASED})
+    ordered = client.get(url, {"ordering": "-release_date"})
+
+    assert [film["title"] for film in searched.json()["results"]] == [
+        "Another Favorite"
+    ]
+    assert [film["title"] for film in filtered.json()["results"]] == [
+        "Current Favorite"
+    ]
+    assert [film["title"] for film in ordered.json()["results"]] == [
+        "Another Favorite",
+        "Current Favorite",
     ]
 
 

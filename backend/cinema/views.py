@@ -1,4 +1,4 @@
-from django.db.models import Avg, Prefetch
+from django.db.models import Avg, BooleanField, Exists, OuterRef, Prefetch, Value
 from django.db.models.functions import Now
 from rest_framework import filters, generics, status
 from rest_framework.decorators import api_view
@@ -42,8 +42,15 @@ class FilmQuerysetMixin:
         authors = User.objects.annotate(
             local_rating=Avg("author_ratings_received__score")
         ).order_by("last_name", "first_name", "username")
+        user = self.request.user
+        favorite_expression = (
+            Exists(Favorite.objects.filter(spectator=user, film=OuterRef("pk")))
+            if user.is_authenticated
+            else Value(False, output_field=BooleanField())
+        )
         return Film.objects.annotate(
-            local_rating=Avg("ratings__score")
+            local_rating=Avg("ratings__score"),
+            is_favorite=favorite_expression,
         ).prefetch_related(Prefetch("authors", queryset=authors))
 
 
@@ -137,6 +144,7 @@ class FilmFavoriteView(FilmQuerysetMixin, generics.GenericAPIView):
             spectator=request.user,
             film=film,
         )
+        film.is_favorite = True
         return Response(
             FilmSerializer(film, context=self.get_serializer_context()).data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
@@ -151,14 +159,18 @@ class FilmFavoriteView(FilmQuerysetMixin, generics.GenericAPIView):
 class FavoriteListView(FilmQuerysetMixin, generics.ListAPIView):
     permission_classes = (IsSpectator,)
     pagination_class = CinemaPagination
+    filter_backends = (
+        ExactChoiceFilterBackend,
+        filters.SearchFilter,
+        NullsLastOrderingFilter,
+    )
+    choice_filter_fields = ("status", "source")
+    search_fields = ("title",)
+    ordering_fields = ("release_date", "local_rating", "title")
+    ordering = ("title", "pk")
 
     def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .filter(favorites__spectator=self.request.user)
-            .order_by("title", "pk")
-        )
+        return super().get_queryset().filter(favorites__spectator=self.request.user)
 
 
 class AuthorQuerysetMixin:

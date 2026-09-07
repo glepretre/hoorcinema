@@ -3,13 +3,20 @@ import { Alert, Avatar, Button, Modal, Spin, Typography } from "antd";
 import { useEffect, useRef, useState } from "react";
 
 import { ApiError } from "../api/client";
-import { archiveFilm, getFilm, unarchiveFilm } from "../api/films";
+import {
+  addFavorite,
+  archiveFilm,
+  getFilm,
+  removeFavorite,
+  unarchiveFilm,
+} from "../api/films";
 import { rateAuthor, rateFilm } from "../api/ratings";
 import {
   canChangeFilmFromToken,
   canRateFromToken,
   useAuthStore,
 } from "../store/auth";
+import type { Film } from "../types/film";
 import { localRating, posterUrl, statusLabels } from "./filmPresentation";
 import { RatingPopover } from "./RatingPopover";
 
@@ -60,6 +67,23 @@ function ArrowBackIcon() {
   );
 }
 
+function HeartIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox="0 0 24 24"
+      width="1em"
+      height="1em"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
+    </svg>
+  );
+}
+
 export function FilmDetail({
   filmId,
   backLabel = "Retour au catalogue",
@@ -98,6 +122,29 @@ export function FilmDetail({
     },
     onSettled: () => {
       archivalPending.current = false;
+    },
+  });
+  const favoriteMutation = useMutation({
+    mutationFn: async (isFavorite: boolean) => {
+      if (isFavorite) {
+        await removeFavorite(filmId);
+        return false;
+      }
+      await addFavorite(filmId);
+      return true;
+    },
+    onSuccess: async (isFavorite) => {
+      queryClient.setQueryData<Film>(
+        ["films", "detail", filmId],
+        (current) => current && { ...current, is_favorite: isFavorite },
+      );
+      setSuccessToast(
+        isFavorite ? "Film ajouté aux favoris" : "Film retiré des favoris",
+      );
+      await queryClient.invalidateQueries({
+        queryKey: ["films"],
+        refetchType: "none",
+      });
     },
   });
 
@@ -168,21 +215,33 @@ export function FilmDetail({
         >
           {backLabel}
         </Button>
-        {canChangeFilm ? (
-          <Button
-            danger={!film.is_archived}
-            loading={archivalMutation.isPending}
-            disabled={archivalMutation.isPending}
-            onClick={() => {
-              archivalMutation.reset();
-              setIsConfirmationOpen(true);
-            }}
-          >
-            {film.is_archived ? "Désarchiver" : "Archiver"}
-          </Button>
-        ) : !isAuthenticated ? (
-          <Button onClick={onLogin}>Se connecter</Button>
-        ) : null}
+        <div className="detail-navigation-actions">
+          {canRate ? (
+            <Button
+              icon={<HeartIcon filled={film.is_favorite} />}
+              loading={favoriteMutation.isPending}
+              disabled={favoriteMutation.isPending}
+              onClick={() => favoriteMutation.mutate(film.is_favorite)}
+            >
+              {film.is_favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+            </Button>
+          ) : null}
+          {canChangeFilm ? (
+            <Button
+              danger={!film.is_archived}
+              loading={archivalMutation.isPending}
+              disabled={archivalMutation.isPending}
+              onClick={() => {
+                archivalMutation.reset();
+                setIsConfirmationOpen(true);
+              }}
+            >
+              {film.is_archived ? "Désarchiver" : "Archiver"}
+            </Button>
+          ) : !isAuthenticated ? (
+            <Button onClick={onLogin}>Se connecter</Button>
+          ) : null}
+        </div>
       </header>
 
       <Modal
@@ -243,6 +302,14 @@ export function FilmDetail({
                 archivalMutation.error,
                 film.is_archived,
               )}
+            />
+          ) : favoriteMutation.isError ? (
+            <Alert
+              className="detail-action-alert"
+              type="error"
+              showIcon
+              title="Action impossible"
+              description="Impossible de modifier vos favoris. Vérifiez votre connexion puis réessayez."
             />
           ) : null}
           <Title>{film.title}</Title>

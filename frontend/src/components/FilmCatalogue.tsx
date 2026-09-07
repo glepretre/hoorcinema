@@ -18,10 +18,11 @@ import {
 } from "antd";
 import { useMemo, useState } from "react";
 
-import { getFilms } from "../api/films";
+import { getFavoriteFilms, getFilms } from "../api/films";
 import { useCatalogueStore } from "../store/catalogue";
 import type {
   Film,
+  FilmCatalogueMode,
   FilmOrdering,
   FilmPageSize,
   FilmStatus,
@@ -68,17 +69,19 @@ function ProfileIcon() {
 }
 
 interface FilmCatalogueProps {
-  isArchived: boolean;
+  mode: FilmCatalogueMode;
+  canManageFavorites: boolean;
   isAuthenticated: boolean;
   isLoggingOut?: boolean;
-  onChangeCatalogue: () => void;
+  onChangeCatalogue: (mode: FilmCatalogueMode) => void;
   onLogin: () => void;
   onLogout: () => void;
   onSelectFilm: (filmId: number) => void;
 }
 
 export function FilmCatalogue({
-  isArchived,
+  mode,
+  canManageFavorites,
   isAuthenticated,
   isLoggingOut = false,
   onChangeCatalogue,
@@ -86,6 +89,8 @@ export function FilmCatalogue({
   onLogout,
   onSelectFilm,
 }: FilmCatalogueProps) {
+  const isArchived = mode === "archived";
+  const isFavorites = mode === "favorites";
   const search = useCatalogueStore((state) => state.search);
   const status = useCatalogueStore((state) => state.status);
   const page = useCatalogueStore((state) => state.page);
@@ -99,16 +104,16 @@ export function FilmCatalogue({
     () => ({
       page,
       pageSize,
-      isArchived,
+      isArchived: isFavorites ? undefined : isArchived,
       search: search || undefined,
       status,
       ordering,
     }),
-    [isArchived, ordering, page, pageSize, search, status],
+    [isArchived, isFavorites, ordering, page, pageSize, search, status],
   );
   const filmsQuery = useQuery({
-    queryKey: ["films", params],
-    queryFn: () => getFilms(params),
+    queryKey: ["films", mode, params],
+    queryFn: () => (isFavorites ? getFavoriteFilms(params) : getFilms(params)),
   });
   const columns = useMemo<TableColumnsType<Film>>(
     () => [
@@ -175,11 +180,19 @@ export function FilmCatalogue({
       <header className="catalogue-header">
         <div>
           <Text className="eyebrow">HOORCINEMA</Text>
-          <Title>{isArchived ? "Films archivés" : "Films à l’affiche"}</Title>
+          <Title>
+            {isFavorites
+              ? "Mes favoris"
+              : isArchived
+                ? "Films archivés"
+                : "Films à l’affiche"}
+          </Title>
           <Paragraph className="text-on-dark">
-            {isArchived
-              ? "Retrouvez les films conservés dans les archives."
-              : "Parcourez la collection, des nouveautés aux classiques."}
+            {isFavorites
+              ? "Retrouvez les films que vous souhaitez garder près de vous."
+              : isArchived
+                ? "Retrouvez les films conservés dans les archives."
+                : "Parcourez la collection, des nouveautés aux classiques."}
           </Paragraph>
         </div>
         <div className="catalogue-header-actions">
@@ -219,10 +232,18 @@ export function FilmCatalogue({
         <div className="catalogue-heading">
           <div>
             <Text className="section-number">
-              {isArchived ? "02 / ARCHIVES" : "01 / CATALOGUE"}
+              {isFavorites
+                ? "03 / FAVORIS"
+                : isArchived
+                  ? "02 / ARCHIVES"
+                  : "01 / CATALOGUE"}
             </Text>
             <Title id="catalogue-title" level={2}>
-              {isArchived ? "La collection archivée" : "La sélection"}
+              {isFavorites
+                ? "Votre sélection"
+                : isArchived
+                  ? "La collection archivée"
+                  : "La sélection"}
             </Title>
           </div>
           <div className="catalogue-heading-actions">
@@ -232,9 +253,22 @@ export function FilmCatalogue({
                 {filmsQuery.data.count > 1 ? "s" : ""}
               </Text>
             )}
-            <Button onClick={onChangeCatalogue}>
-              {isArchived ? "Retour au catalogue" : "Films archivés"}
-            </Button>
+            {mode === "active" ? (
+              <>
+                <Button onClick={() => onChangeCatalogue("archived")}>
+                  Films archivés
+                </Button>
+                {canManageFavorites ? (
+                  <Button onClick={() => onChangeCatalogue("favorites")}>
+                    Mes favoris
+                  </Button>
+                ) : null}
+              </>
+            ) : (
+              <Button onClick={() => onChangeCatalogue("active")}>
+                Retour au catalogue
+              </Button>
+            )}
           </div>
         </div>
 
@@ -301,7 +335,9 @@ export function FilmCatalogue({
             title={
               isArchived
                 ? "Impossible de charger les films archivés."
-                : "Impossible de charger le catalogue."
+                : isFavorites
+                  ? "Impossible de charger vos favoris."
+                  : "Impossible de charger le catalogue."
             }
             description="Vérifiez votre connexion puis réessayez."
             action={
@@ -317,7 +353,13 @@ export function FilmCatalogue({
               dataSource={filmsQuery.data.results}
               locale={{
                 emptyText: (
-                  <Empty description="Aucun film ne correspond à votre recherche." />
+                  <Empty
+                    description={
+                      isFavorites && !search && !status
+                        ? "Vous n’avez pas encore de film favori."
+                        : "Aucun film ne correspond à votre recherche."
+                    }
+                  />
                 ),
               }}
               pagination={false}

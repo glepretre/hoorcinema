@@ -1,9 +1,12 @@
 import { describe, expect, test, vi } from "vitest";
 
 import {
+  addFavorite,
   archiveFilm,
   buildFilmListPath,
+  getFavoriteFilms,
   getFilm,
+  removeFavorite,
   unarchiveFilm,
 } from "./films";
 import { apiRequest } from "./client";
@@ -41,7 +44,36 @@ describe("film API", () => {
   test("requests one film by its identifier", () => {
     getFilm(42);
 
-    expect(apiRequest).toHaveBeenCalledWith("/api/films/42/");
+    expect(apiRequest).toHaveBeenCalledWith("/api/films/42/", {
+      authenticated: true,
+    });
+  });
+
+  test("requests the authenticated paginated favorites", () => {
+    getFavoriteFilms({
+      page: 2,
+      pageSize: 50,
+      search: "paradis",
+      status: "Released",
+      ordering: "-release_date",
+    });
+
+    expect(apiRequest).toHaveBeenCalledWith(
+      "/api/me/favorites/?page=2&page_size=50&search=paradis&status=Released&ordering=-release_date",
+      { authenticated: true },
+    );
+  });
+
+  test.each([
+    [addFavorite, "POST"],
+    [removeFavorite, "DELETE"],
+  ])("sends an authenticated favorite mutation", (mutateFavorite, method) => {
+    mutateFavorite(42);
+
+    expect(apiRequest).toHaveBeenCalledWith("/api/films/42/favorite/", {
+      method,
+      authenticated: true,
+    });
   });
 
   test.each([

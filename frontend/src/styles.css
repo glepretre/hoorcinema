@@ -441,6 +441,11 @@ body {
   background: transparent;
 }
 
+.detail-navigation-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .film-detail-content {
   position: relative;
   z-index: 1;
@@ -775,6 +780,17 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .catalogue-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .catalogue-heading-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
   .catalogue-search-control {
     grid-column: auto;
   }
@@ -816,6 +832,11 @@ body {
 
   .detail-navigation .ant-btn {
     padding-inline: 10px;
+  }
+
+  .detail-navigation-actions {
+    align-items: flex-end;
+    flex-direction: column;
   }
 
   .film-detail-content {

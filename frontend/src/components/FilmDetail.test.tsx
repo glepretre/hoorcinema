@@ -16,8 +16,10 @@ import type { Film } from "../types/film";
 import { FilmDetail } from "./FilmDetail";
 
 vi.mock("../api/films", () => ({
+  addFavorite: vi.fn(),
   archiveFilm: vi.fn(),
   getFilm: vi.fn(),
+  removeFavorite: vi.fn(),
   unarchiveFilm: vi.fn(),
 }));
 
@@ -33,6 +35,7 @@ const film: Film = {
   release_date: "1988-11-17",
   status: "Released",
   is_archived: false,
+  is_favorite: false,
   authors: [
     {
       id: 2,
@@ -102,6 +105,11 @@ beforeEach(() => {
     ...film,
     is_archived: false,
   });
+  vi.mocked(filmsApi.addFavorite).mockResolvedValue({
+    ...film,
+    is_favorite: true,
+  });
+  vi.mocked(filmsApi.removeFavorite).mockResolvedValue();
   vi.mocked(ratingsApi.rateFilm).mockResolvedValue({
     id: 1,
     film: 7,
@@ -191,6 +199,26 @@ describe("film detail", () => {
     ).toBeTruthy();
   });
 
+  test("adds and removes the film from favorites", async () => {
+    renderDetail();
+    await screen.findByRole("heading", { name: "Cinema Paradiso" });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ajouter aux favoris" }),
+    );
+
+    await waitFor(() => expect(filmsApi.addFavorite).toHaveBeenCalledWith(7));
+    expect(await screen.findByText("Film ajouté aux favoris")).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Retirer des favoris" }),
+    );
+
+    await waitFor(() =>
+      expect(filmsApi.removeFavorite).toHaveBeenCalledWith(7),
+    );
+    expect(await screen.findByText("Film retiré des favoris")).toBeTruthy();
+  });
+
   test("uses the provided archived catalogue return label", async () => {
     renderDetail(vi.fn(), "Retour aux films archivés");
     await screen.findByRole("heading", { name: "Cinema Paradiso" });
@@ -245,6 +273,9 @@ describe("film detail", () => {
     await screen.findByRole("heading", { name: "Cinema Paradiso" });
 
     expect(screen.queryByRole("button", { name: /^Noter/ })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Ajouter aux favoris" }),
+    ).toBeNull();
     expect(screen.getByRole("button", { name: "Archiver" })).toBeTruthy();
   });
 
@@ -255,6 +286,9 @@ describe("film detail", () => {
     await screen.findByRole("heading", { name: "Cinema Paradiso" });
 
     expect(screen.queryByRole("button", { name: /^Noter/ })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Ajouter aux favoris" }),
+    ).toBeNull();
     expect(screen.queryByRole("button", { name: "Archiver" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Désarchiver" })).toBeNull();
     expect(ratingsApi.rateFilm).not.toHaveBeenCalled();

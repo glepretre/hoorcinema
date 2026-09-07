@@ -26,9 +26,12 @@ vi.mock("./api/auth", async (importOriginal) => {
 });
 
 vi.mock("./api/films", () => ({
+  addFavorite: vi.fn(),
   archiveFilm: vi.fn(),
+  getFavoriteFilms: vi.fn(),
   getFilms: vi.fn(),
   getFilm: vi.fn(),
+  removeFavorite: vi.fn(),
   unarchiveFilm: vi.fn(),
 }));
 
@@ -39,6 +42,7 @@ const film: Film = {
   release_date: "1988-11-17",
   status: "Released",
   is_archived: false,
+  is_favorite: false,
   authors: [],
   source: "TMDB",
   tmdb_id: 11216,
@@ -49,6 +53,10 @@ const film: Film = {
   created_at: "2026-01-01T10:00:00Z",
   updated_at: "2026-01-01T10:00:00Z",
 };
+
+function spectatorAccessToken(): string {
+  return `header.${btoa(JSON.stringify({ can_rate: true }))}.signature`;
+}
 
 function renderApp() {
   const queryClient = new QueryClient({
@@ -76,6 +84,12 @@ beforeEach(() => {
     results: [],
   });
   vi.mocked(filmsApi.getFilm).mockResolvedValue(film);
+  vi.mocked(filmsApi.getFavoriteFilms).mockResolvedValue({
+    count: 0,
+    next: null,
+    previous: null,
+    results: [],
+  });
 });
 
 afterEach(() => {
@@ -86,7 +100,9 @@ afterEach(() => {
 describe("film navigation", () => {
   test("opens a film URL from the catalogue and returns", async () => {
     history.replaceState(null, "", "/films/");
-    useAuthStore.getState().setTokens({ access: "access", refresh: "refresh" });
+    useAuthStore
+      .getState()
+      .setTokens({ access: spectatorAccessToken(), refresh: "refresh" });
     vi.mocked(filmsApi.getFilms).mockResolvedValue({
       count: 1,
       next: null,
@@ -168,6 +184,7 @@ describe("film navigation", () => {
     expect(filmsApi.getFilms).toHaveBeenLastCalledWith(
       expect.objectContaining({ isArchived: false }),
     );
+    expect(screen.queryByRole("button", { name: "Mes favoris" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Films archivés" }));
 
     expect(location.pathname).toBe("/films/archives/");
@@ -178,6 +195,42 @@ describe("film navigation", () => {
       screen.getByRole("button", { name: "Retour au catalogue" }),
     );
     expect(location.pathname).toBe("/films/");
+  });
+
+  test("opens favorites as a third catalogue and preserves the return path", async () => {
+    history.replaceState(null, "", "/films/");
+    useAuthStore
+      .getState()
+      .setTokens({ access: spectatorAccessToken(), refresh: "refresh" });
+    vi.mocked(filmsApi.getFavoriteFilms).mockResolvedValue({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [{ ...film, is_favorite: true }],
+    });
+    renderApp();
+
+    await screen.findByRole("heading", { name: "Films à l’affiche" });
+    fireEvent.click(screen.getByRole("button", { name: "Mes favoris" }));
+
+    expect(location.pathname).toBe("/films/favorites/");
+    expect(
+      await screen.findByRole("heading", { name: "Mes favoris" }),
+    ).toBeTruthy();
+    fireEvent.click(await screen.findByLabelText("Voir Cinema Paradiso"));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Retour à mes favoris/ }),
+    );
+    expect(location.pathname).toBe("/films/favorites/");
+  });
+
+  test("does not expose favorites to anonymous visitors", async () => {
+    history.replaceState(null, "", "/films/favorites/");
+
+    renderApp();
+
+    expect(screen.getByRole("heading", { name: "Se connecter" })).toBeTruthy();
+    expect(filmsApi.getFavoriteFilms).not.toHaveBeenCalled();
   });
 
   test("lets an anonymous user browse the catalogue and film details", async () => {

@@ -162,13 +162,15 @@ The interface is in French and supports desktop and mobile layouts.
 - `/films/` lists active films and supports title search, TMDb status filtering,
   sorting, and pagination with 10, 50, or 100 films per page.
 - `/films/archives/` provides the same controls for archived films.
+- `/films/favorites/` provides authenticated spectators with the same controls
+  for their personal favorite films.
 - `/films/{id}/` displays a public film detail page.
 - Authenticated spectators whose JWT advertises `can_rate` can rate films and
-  authors from a film detail page.
+  authors and add or remove favorites from a film detail page.
 - Staff users whose JWT advertises `can_change_film` can archive and unarchive
   films; Django still checks the permission for every request.
-- Favorites and administrative film or author editing are available through the
-  API and Django administration, but not through dedicated frontend screens.
+- Administrative film or author editing remains available through the API and
+  Django administration rather than dedicated frontend screens.
 
 JWTs are temporarily persisted in browser `localStorage` so development sessions
 survive reloads. This is not the intended production security model; use secure
@@ -379,7 +381,7 @@ role. Staff status alone does not grant spectator actions.
 | `PUT /api/authors/{id}/rating/` | Create or replace the current spectator's author rating. |
 | `POST /api/films/{id}/favorite/` | Add a favorite idempotently. |
 | `DELETE /api/films/{id}/favorite/` | Remove a favorite idempotently. |
-| `GET /api/me/favorites/` | Return only the current spectator's paginated favorite films. |
+| `GET /api/me/favorites/` | Return only the current spectator's paginated favorite films with catalogue search, status filter, and ordering. |
 
 Ratings use an integer score from 1 to 5:
 

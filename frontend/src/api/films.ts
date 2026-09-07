@@ -27,8 +27,18 @@ export function getFilms(params: FilmListParams): Promise<PaginatedFilms> {
   return apiRequest(buildFilmListPath(params));
 }
 
+export function getFavoriteFilms(
+  params: FilmListParams,
+): Promise<PaginatedFilms> {
+  const query = new URLSearchParams(buildFilmListPath(params).split("?")[1]);
+  query.delete("is_archived");
+  return apiRequest(`/api/me/favorites/?${query.toString()}`, {
+    authenticated: true,
+  });
+}
+
 export function getFilm(id: number): Promise<Film> {
-  return apiRequest(`/api/films/${id}/`);
+  return apiRequest(`/api/films/${id}/`, { authenticated: true });
 }
 
 export function archiveFilm(id: number): Promise<Film> {
@@ -41,6 +51,20 @@ export function archiveFilm(id: number): Promise<Film> {
 export function unarchiveFilm(id: number): Promise<Film> {
   return apiRequest(`/api/films/${id}/unarchive/`, {
     method: "PATCH",
+    authenticated: true,
+  });
+}
+
+export function addFavorite(id: number): Promise<Film> {
+  return apiRequest(`/api/films/${id}/favorite/`, {
+    method: "POST",
+    authenticated: true,
+  });
+}
+
+export function removeFavorite(id: number): Promise<void> {
+  return apiRequest(`/api/films/${id}/favorite/`, {
+    method: "DELETE",
     authenticated: true,
   });
 }

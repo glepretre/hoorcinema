@@ -10,10 +10,13 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import * as filmsApi from "../api/films";
 import { useCatalogueStore } from "../store/catalogue";
-import type { Film, PaginatedFilms } from "../types/film";
+import type { Film, FilmCatalogueMode, PaginatedFilms } from "../types/film";
 import { FilmCatalogue } from "./FilmCatalogue";
 
-vi.mock("../api/films", () => ({ getFilms: vi.fn() }));
+vi.mock("../api/films", () => ({
+  getFavoriteFilms: vi.fn(),
+  getFilms: vi.fn(),
+}));
 
 const film: Film = {
   id: 7,
@@ -22,6 +25,7 @@ const film: Film = {
   release_date: "1988-11-17",
   status: "Released",
   is_archived: false,
+  is_favorite: false,
   authors: [],
   source: "TMDB",
   tmdb_id: 11216,
@@ -43,7 +47,7 @@ const response: PaginatedFilms = {
 const onSelectFilm = vi.fn();
 
 function renderCatalogue(
-  isArchived = false,
+  mode: FilmCatalogueMode = "active",
   isAuthenticated = true,
   onLogin = vi.fn(),
 ) {
@@ -53,7 +57,8 @@ function renderCatalogue(
   return render(
     <QueryClientProvider client={queryClient}>
       <FilmCatalogue
-        isArchived={isArchived}
+        mode={mode}
+        canManageFavorites={isAuthenticated}
         isAuthenticated={isAuthenticated}
         onChangeCatalogue={vi.fn()}
         onLogin={onLogin}
@@ -68,6 +73,7 @@ beforeEach(() => {
   localStorage.clear();
   useCatalogueStore.getState().reset();
   vi.mocked(filmsApi.getFilms).mockResolvedValue(response);
+  vi.mocked(filmsApi.getFavoriteFilms).mockResolvedValue(response);
 });
 
 afterEach(() => {
@@ -196,7 +202,7 @@ describe("film catalogue", () => {
   });
 
   test("reuses the catalogue controls for archived films", async () => {
-    renderCatalogue(true);
+    renderCatalogue("archived");
 
     expect(
       await screen.findByRole("heading", { name: "Films archivés" }),
@@ -214,12 +220,27 @@ describe("film catalogue", () => {
 
   test("offers login instead of account access to anonymous users", async () => {
     const onLogin = vi.fn();
-    renderCatalogue(false, false, onLogin);
+    renderCatalogue("active", false, onLogin);
 
     await screen.findByText("Cinema Paradiso");
     fireEvent.click(screen.getByRole("button", { name: "Se connecter" }));
 
     expect(onLogin).toHaveBeenCalledOnce();
     expect(screen.queryByRole("button", { name: "Mon compte" })).toBeNull();
+  });
+
+  test("reuses the catalogue controls for the spectator favorites", async () => {
+    renderCatalogue("favorites");
+
+    expect(
+      await screen.findByRole("heading", { name: "Mes favoris" }),
+    ).toBeTruthy();
+    expect(screen.getByLabelText("Rechercher un film")).toBeTruthy();
+    expect(screen.getByLabelText("Filtrer par statut")).toBeTruthy();
+    expect(screen.getByLabelText("Trier les films")).toBeTruthy();
+    expect(filmsApi.getFavoriteFilms).toHaveBeenLastCalledWith(
+      expect.objectContaining({ isArchived: undefined }),
+    );
+    expect(filmsApi.getFilms).not.toHaveBeenCalled();
   });
 });

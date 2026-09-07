@@ -5,14 +5,17 @@ import { logout } from "./api/auth";
 import { AuthScreen, type AuthMode } from "./components/AuthScreen";
 import { FilmCatalogue } from "./components/FilmCatalogue";
 import { FilmDetail } from "./components/FilmDetail";
-import { useAuthStore } from "./store/auth";
+import { canRateFromToken, useAuthStore } from "./store/auth";
 import { useCatalogueStore } from "./store/catalogue";
+import type { FilmCatalogueMode } from "./types/film";
 
 const ARCHIVED_FILMS_PATH = "/films/archives/";
+const FAVORITE_FILMS_PATH = "/films/favorites/";
 const FILMS_PATH = "/films/";
 const LOGIN_PATH = "/login/";
 
-type CataloguePath = typeof FILMS_PATH | typeof ARCHIVED_FILMS_PATH;
+type CataloguePath =
+  typeof FILMS_PATH | typeof ARCHIVED_FILMS_PATH | typeof FAVORITE_FILMS_PATH;
 
 interface AppRoute {
   authMode: AuthMode;
@@ -22,7 +25,31 @@ interface AppRoute {
 }
 
 function isCataloguePath(value: unknown): value is CataloguePath {
-  return value === FILMS_PATH || value === ARCHIVED_FILMS_PATH;
+  return (
+    value === FILMS_PATH ||
+    value === ARCHIVED_FILMS_PATH ||
+    value === FAVORITE_FILMS_PATH
+  );
+}
+
+function catalogueMode(path: CataloguePath): FilmCatalogueMode {
+  if (path === ARCHIVED_FILMS_PATH) {
+    return "archived";
+  }
+  if (path === FAVORITE_FILMS_PATH) {
+    return "favorites";
+  }
+  return "active";
+}
+
+function cataloguePath(mode: FilmCatalogueMode): CataloguePath {
+  if (mode === "archived") {
+    return ARCHIVED_FILMS_PATH;
+  }
+  if (mode === "favorites") {
+    return FAVORITE_FILMS_PATH;
+  }
+  return FILMS_PATH;
 }
 
 function routeFromLocation(): AppRoute {
@@ -43,15 +70,17 @@ function routeFromLocation(): AppRoute {
   return {
     authMode:
       pathname === LOGIN_PATH || pathname === "/login" ? "login" : "register",
-    cataloguePath:
-      pathname === ARCHIVED_FILMS_PATH ? ARCHIVED_FILMS_PATH : FILMS_PATH,
+    cataloguePath: isCataloguePath(pathname) ? pathname : FILMS_PATH,
     filmId: null,
-    isAuthRoute: pathname !== FILMS_PATH && pathname !== ARCHIVED_FILMS_PATH,
+    isAuthRoute: !isCataloguePath(pathname),
   };
 }
 
 export default function App() {
   const isAuthenticated = useAuthStore((state) => state.accessToken !== null);
+  const canManageFavorites = useAuthStore((state) =>
+    canRateFromToken(state.accessToken),
+  );
   const setSelectedFilmId = useCatalogueStore(
     (state) => state.setSelectedFilmId,
   );
@@ -98,10 +127,15 @@ export default function App() {
     });
   };
 
-  if (!isAuthenticated && route.isAuthRoute) {
+  if (
+    !isAuthenticated &&
+    (route.isAuthRoute || route.cataloguePath === FAVORITE_FILMS_PATH)
+  ) {
     return (
       <AuthScreen
-        mode={route.authMode}
+        mode={
+          route.cataloguePath === FAVORITE_FILMS_PATH ? "login" : route.authMode
+        }
         onBrowse={() => navigateToCatalogue(FILMS_PATH)}
         onLogin={() => navigateToCatalogue(FILMS_PATH)}
         onModeChange={navigateToAuth}
@@ -110,23 +144,29 @@ export default function App() {
   }
 
   const isArchived = route.cataloguePath === ARCHIVED_FILMS_PATH;
+  const isFavorites = route.cataloguePath === FAVORITE_FILMS_PATH;
 
   return route.filmId !== null ? (
     <FilmDetail
       filmId={route.filmId}
-      backLabel={isArchived ? "Retour aux films archivés" : undefined}
+      backLabel={
+        isArchived
+          ? "Retour aux films archivés"
+          : isFavorites
+            ? "Retour à mes favoris"
+            : undefined
+      }
       isAuthenticated={isAuthenticated}
       onBack={() => navigateToCatalogue(route.cataloguePath)}
       onLogin={() => navigateToAuth("login")}
     />
   ) : (
     <FilmCatalogue
-      isArchived={isArchived}
+      mode={catalogueMode(route.cataloguePath)}
+      canManageFavorites={canManageFavorites}
       isAuthenticated={isAuthenticated}
       isLoggingOut={logoutMutation.isPending}
-      onChangeCatalogue={() =>
-        navigateToCatalogue(isArchived ? FILMS_PATH : ARCHIVED_FILMS_PATH)
-      }
+      onChangeCatalogue={(mode) => navigateToCatalogue(cataloguePath(mode))}
       onLogin={() => navigateToAuth("login")}
       onLogout={() => {
         navigateToAuth("login");

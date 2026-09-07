@@ -85,6 +85,7 @@ class FilmSummarySerializer(serializers.ModelSerializer):
 class FilmSerializer(serializers.ModelSerializer):
     authors = AuthorSummarySerializer(many=True, read_only=True)
     local_rating = LocalRatingField()
+    is_favorite = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Film
@@ -95,6 +96,7 @@ class FilmSerializer(serializers.ModelSerializer):
             "release_date",
             "status",
             "is_archived",
+            "is_favorite",
             "authors",
             "source",
             "tmdb_id",
