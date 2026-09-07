@@ -865,3 +865,9 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+@media (max-width: 360px) {
+  .auth-story h1.ant-typography {
+    font-size: 52px;
+  }
+}
