@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: hoorcinema
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health/
+    domains:
+      - hoorcinema.glepretre.fr
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hoorcinema-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: hoorcinema.glepretre.fr
+      - key: TMDB_API_TOKEN
+        sync: false
+
+databases:
+  - name: hoorcinema-db
+    plan: free
+    region: frankfurt
+    databaseName: cinema
+    user: cinema
+    ipAllowList: []
