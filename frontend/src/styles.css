@@ -128,6 +128,16 @@ body {
   margin-bottom: 22px;
 }
 
+.auth-card .auth-primary-alert {
+  border-color: #f0b6a5;
+  background: #fff2ed;
+}
+
+.auth-card .auth-primary-alert .ant-alert-icon,
+.auth-card .auth-primary-alert .ant-alert-message {
+  color: #d85b36;
+}
+
 .auth-card .ant-form-item-label label {
   color: #39322d;
   font-weight: 600;

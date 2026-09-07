@@ -89,6 +89,7 @@ export function AuthScreen({
 
           {registered && (
             <Alert
+              className="auth-primary-alert"
               type="success"
               showIcon
               title="Votre compte a été créé. Vous pouvez maintenant vous connecter."
