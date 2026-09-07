@@ -422,17 +422,21 @@ popular films:
 docker compose exec backend uv run python manage.py import_tmdb --limit 20 --page 1
 ```
 
-Import one film directly by its TMDb movie ID:
+Import one or more films directly by their TMDb movie IDs:
 
 ```bash
-docker compose exec backend uv run python manage.py import_tmdb --movie-id <tmdb_id>
+docker compose exec backend uv run python manage.py import_tmdb --movie-id <tmdb_id> [<tmdb_id> ...]
 ```
+
+Staff users with permission to change films can also use **Import from TMDb**
+from the Django administration film list and enter space- or comma-separated
+IDs.
 
 | Option | Default | Behavior |
 | --- | --- | --- |
 | `--limit N` | `20` | Maximum entries considered from the selected popular-films page. |
 | `--page N` | `1` | Popular-films page to request. |
-| `--movie-id ID` | Not set | Import one film without requesting the popular list; page and limit are ignored. |
+| `--movie-id ID [ID ...]` | Not set | Import one or more films without requesting the popular list; page and limit are ignored. |
 | `--language CODE` | `fr-FR` | TMDb language for details and credits. |
 | `--dry-run` | Disabled | Run the complete import and roll back database writes. |
 

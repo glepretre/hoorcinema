@@ -160,8 +160,50 @@ def test_admin_changelists_apply_status_and_author_filters(
 
     assert film_response.status_code == 200
     assert list(film_response.context["cl"].queryset) == [rated_film]
+    assert reverse("admin:cinema_film_import_tmdb") in film_response.content.decode()
     assert author_response.status_code == 200
     assert list(author_response.context["cl"].queryset) == [author]
+
+
+@pytest.mark.django_db
+def test_film_admin_imports_multiple_tmdb_ids(client, admin_request, monkeypatch):
+    command_options = {}
+
+    def fake_call_command(name, **options):
+        command_options.update(options)
+        options["stdout"].write(
+            "TMDb import complete: created=2, updated=0, skipped=0, failed=0."
+        )
+
+    monkeypatch.setattr("cinema.admin.call_command", fake_call_command)
+    client.force_login(admin_request.user)
+    import_url = reverse("admin:cinema_film_import_tmdb")
+
+    get_response = client.get(import_url)
+    response = client.post(import_url, {"movie_ids": "42, 43 42"})
+
+    assert get_response.status_code == 200
+    assert "TMDb movie IDs" in get_response.content.decode()
+    assert response.status_code == 302
+    assert response.url == reverse("admin:cinema_film_changelist")
+    assert command_options["movie_id"] == [42, 43]
+
+
+@pytest.mark.django_db
+def test_film_admin_rejects_invalid_tmdb_ids(client, admin_request, monkeypatch):
+    monkeypatch.setattr(
+        "cinema.admin.call_command",
+        lambda *args, **kwargs: pytest.fail("The import command must not be called"),
+    )
+    client.force_login(admin_request.user)
+
+    response = client.post(
+        reverse("admin:cinema_film_import_tmdb"),
+        {"movie_ids": "42, invalid"},
+    )
+
+    assert response.status_code == 200
+    assert "IDs must be positive integers." in response.content.decode()
 
 
 @pytest.mark.django_db

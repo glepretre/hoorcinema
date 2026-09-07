@@ -1,7 +1,17 @@
-from django.contrib import admin
+import re
+from io import StringIO
+
+from django import forms
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
+from django.core.exceptions import PermissionDenied
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.db.models import Avg, Count, Prefetch
+from django.http import HttpResponseRedirect
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
 
 from cinema.models import (
     Author,
@@ -17,6 +27,24 @@ from cinema.roles import AUTHOR_GROUP, SPECTATOR_GROUP
 
 PROFILE_FIELDS = ("date_of_birth", "bio", "avatar", "source", "tmdb_id")
 PRIVILEGE_FIELDS = ("is_staff", "is_superuser", "groups", "user_permissions")
+
+
+class TMDbImportForm(forms.Form):
+    movie_ids = forms.CharField(
+        label="TMDb movie IDs",
+        help_text="Enter one or more positive IDs, separated by spaces or commas.",
+        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "550, 680, 155"}),
+    )
+
+    def clean_movie_ids(self):
+        values = [
+            value
+            for value in re.split(r"[\s,;]+", self.cleaned_data["movie_ids"])
+            if value
+        ]
+        if any(not value.isdecimal() or int(value) < 1 for value in values):
+            raise forms.ValidationError("IDs must be positive integers.")
+        return list(dict.fromkeys(int(value) for value in values))
 
 
 class CinemaUserAdmin(UserAdmin):
@@ -151,6 +179,7 @@ class SpectatorAdmin(RoleUserAdmin):
 
 @admin.register(Film)
 class FilmAdmin(admin.ModelAdmin):
+    change_list_template = "admin/cinema/film/change_list.html"
     list_display = (
         "title",
         "status",
@@ -170,6 +199,57 @@ class FilmAdmin(admin.ModelAdmin):
     )
     date_hierarchy = "created_at"
     inlines = (FilmAuthorshipInline, FilmRatingInline)
+
+    def get_urls(self):
+        return [
+            path(
+                "import-tmdb/",
+                self.admin_site.admin_view(self.import_tmdb_view),
+                name="cinema_film_import_tmdb",
+            )
+        ] + super().get_urls()
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = {
+            **(extra_context or {}),
+            "has_change_permission": self.has_change_permission(request),
+        }
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def import_tmdb_view(self, request):
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        form = TMDbImportForm(request.POST or None)
+        if request.method == "POST" and form.is_valid():
+            stdout = StringIO()
+            stderr = StringIO()
+            try:
+                call_command(
+                    "import_tmdb",
+                    movie_id=form.cleaned_data["movie_ids"],
+                    stdout=stdout,
+                    stderr=stderr,
+                )
+            except CommandError as error:
+                self.message_user(request, str(error), level=messages.ERROR)
+            else:
+                level = messages.WARNING if stderr.getvalue() else messages.SUCCESS
+                result = "\n".join(
+                    output.strip()
+                    for output in (stdout.getvalue(), stderr.getvalue())
+                    if output.strip()
+                )
+                self.message_user(request, result, level=level)
+                return HttpResponseRedirect(reverse("admin:cinema_film_changelist"))
+
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "form": form,
+            "title": "Import films from TMDb",
+        }
+        return TemplateResponse(request, "admin/cinema/film/import_tmdb.html", context)
 
     def get_queryset(self, request):
         return (

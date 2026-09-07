@@ -233,6 +233,18 @@ def test_import_tmdb_can_import_one_movie_without_listing():
 
 
 @pytest.mark.django_db
+def test_import_tmdb_can_import_multiple_movie_ids_without_listing():
+    second_movie = {**MOVIE, "id": 43, "title": "Second Remote Film"}
+    FakeClient.movies = [MOVIE, second_movie]
+    FakeClient.credits[43] = {"crew": []}
+
+    call_command("import_tmdb", movie_id=[42, 43])
+
+    assert set(Film.objects.values_list("tmdb_id", flat=True)) == {42, 43}
+    assert all(call[0] != "list" for call in FakeClient.calls)
+
+
+@pytest.mark.django_db
 def test_import_tmdb_requires_token(monkeypatch):
     monkeypatch.delenv("TMDB_API_TOKEN")
 

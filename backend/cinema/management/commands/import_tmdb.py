@@ -38,7 +38,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--limit", type=positive_integer, default=20)
         parser.add_argument("--page", type=positive_integer, default=1)
-        parser.add_argument("--movie-id", type=positive_integer)
+        parser.add_argument("--movie-id", type=positive_integer, nargs="+")
         parser.add_argument("--language", default=DEFAULT_LANGUAGE)
         parser.add_argument("--dry-run", action="store_true")
 
@@ -51,7 +51,7 @@ class Command(BaseCommand):
         counts = {"created": 0, "updated": 0, "skipped": 0, "failed": 0}
         movie_id = options["movie_id"]
         if movie_id:
-            movie_ids = [movie_id]
+            movie_ids = movie_id if isinstance(movie_id, list) else [movie_id]
         else:
             try:
                 payload = client.get_popular_movies(
