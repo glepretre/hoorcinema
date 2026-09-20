@@ -50,6 +50,7 @@ class LocalRatingField(serializers.DecimalField):
 
 class AuthorSummarySerializer(serializers.ModelSerializer):
     local_rating = LocalRatingField()
+    current_user_rating = serializers.IntegerField(allow_null=True, read_only=True)
 
     class Meta:
         model = User
@@ -62,11 +63,13 @@ class AuthorSummarySerializer(serializers.ModelSerializer):
             "source",
             "tmdb_id",
             "local_rating",
+            "current_user_rating",
         )
 
 
 class FilmSummarySerializer(serializers.ModelSerializer):
     local_rating = LocalRatingField()
+    current_user_rating = serializers.IntegerField(allow_null=True, read_only=True)
 
     class Meta:
         model = Film
@@ -79,12 +82,14 @@ class FilmSummarySerializer(serializers.ModelSerializer):
             "source",
             "poster_path",
             "local_rating",
+            "current_user_rating",
         )
 
 
 class FilmSerializer(serializers.ModelSerializer):
     authors = AuthorSummarySerializer(many=True, read_only=True)
     local_rating = LocalRatingField()
+    current_user_rating = serializers.IntegerField(allow_null=True, read_only=True)
     is_favorite = serializers.BooleanField(read_only=True)
 
     class Meta:
@@ -104,6 +109,7 @@ class FilmSerializer(serializers.ModelSerializer):
             "tmdb_vote_count",
             "poster_path",
             "local_rating",
+            "current_user_rating",
             "created_at",
             "updated_at",
         )
@@ -112,6 +118,7 @@ class FilmSerializer(serializers.ModelSerializer):
 class AuthorSerializer(serializers.ModelSerializer):
     films = FilmSummarySerializer(source="authored_films", many=True, read_only=True)
     local_rating = LocalRatingField()
+    current_user_rating = serializers.IntegerField(allow_null=True, read_only=True)
 
     class Meta:
         model = Author
@@ -127,6 +134,7 @@ class AuthorSerializer(serializers.ModelSerializer):
             "source",
             "tmdb_id",
             "local_rating",
+            "current_user_rating",
             "films",
         )
 

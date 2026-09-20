@@ -1,4 +1,13 @@
-from django.db.models import Avg, BooleanField, Exists, OuterRef, Prefetch, Value
+from django.db.models import (
+    Avg,
+    BooleanField,
+    Exists,
+    IntegerField,
+    OuterRef,
+    Prefetch,
+    Subquery,
+    Value,
+)
 from django.db.models.functions import Now
 from rest_framework import filters, generics, status
 from rest_framework.decorators import api_view
@@ -35,12 +44,27 @@ class CinemaPagination(PageNumberPagination):
     max_page_size = 100
 
 
+def current_user_rating(user, rating_model, target_field):
+    if not user.is_authenticated:
+        return Value(None, output_field=IntegerField())
+    return Subquery(
+        rating_model.objects.filter(
+            spectator=user,
+            **{target_field: OuterRef("pk")},
+        ).values("score")[:1],
+        output_field=IntegerField(),
+    )
+
+
 class FilmQuerysetMixin:
     serializer_class = FilmSerializer
 
     def get_queryset(self):
         authors = User.objects.annotate(
-            local_rating=Avg("author_ratings_received__score")
+            local_rating=Avg("author_ratings_received__score"),
+            current_user_rating=current_user_rating(
+                self.request.user, AuthorRating, "author"
+            ),
         ).order_by("last_name", "first_name", "username")
         user = self.request.user
         favorite_expression = (
@@ -50,6 +74,7 @@ class FilmQuerysetMixin:
         )
         return Film.objects.annotate(
             local_rating=Avg("ratings__score"),
+            current_user_rating=current_user_rating(user, FilmRating, "film"),
             is_favorite=favorite_expression,
         ).prefetch_related(Prefetch("authors", queryset=authors))
 
@@ -177,11 +202,17 @@ class AuthorQuerysetMixin:
     serializer_class = AuthorSerializer
 
     def get_queryset(self):
-        films = Film.objects.annotate(local_rating=Avg("ratings__score")).order_by(
-            "title", "pk"
-        )
+        films = Film.objects.annotate(
+            local_rating=Avg("ratings__score"),
+            current_user_rating=current_user_rating(
+                self.request.user, FilmRating, "film"
+            ),
+        ).order_by("title", "pk")
         return Author.objects.annotate(
-            local_rating=Avg("author_ratings_received__score")
+            local_rating=Avg("author_ratings_received__score"),
+            current_user_rating=current_user_rating(
+                self.request.user, AuthorRating, "author"
+            ),
         ).prefetch_related(Prefetch("authored_films", queryset=films))
 
 

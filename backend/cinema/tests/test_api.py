@@ -110,6 +110,7 @@ def test_anonymous_film_list_is_paginated_and_nested(catalogue):
     film = response.json()["results"][0]
     assert film["title"] == "Aurora Story"
     assert film["local_rating"] == "3.00"
+    assert film["current_user_rating"] is None
     assert film["authors"] == [
         {
             "id": catalogue["local_author"].pk,
@@ -120,6 +121,7 @@ def test_anonymous_film_list_is_paginated_and_nested(catalogue):
             "source": "ADMIN",
             "tmdb_id": None,
             "local_rating": "4.00",
+            "current_user_rating": None,
         }
     ]
 
@@ -143,6 +145,7 @@ def test_anonymous_film_detail_exposes_external_and_related_data(catalogue):
     assert response.json()["tmdb_vote_average"] == "8.25"
     assert response.json()["tmdb_vote_count"] == 200
     assert response.json()["local_rating"] == "5.00"
+    assert response.json()["current_user_rating"] is None
     assert response.json()["authors"][0]["username"] == "tmdb_84"
 
 
@@ -158,6 +161,7 @@ def test_anonymous_author_endpoints_include_nested_films(catalogue):
     assert detail_response.status_code == 200
     assert detail_response.json()["email"] == "ada@example.com"
     assert detail_response.json()["local_rating"] == "4.00"
+    assert detail_response.json()["current_user_rating"] is None
     assert detail_response.json()["films"] == [
         {
             "id": catalogue["local_film"].pk,
@@ -168,6 +172,7 @@ def test_anonymous_author_endpoints_include_nested_films(catalogue):
             "source": "ADMIN",
             "poster_path": "",
             "local_rating": "3.00",
+            "current_user_rating": None,
         }
     ]
 

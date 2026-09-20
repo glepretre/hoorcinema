@@ -46,6 +46,7 @@ const film: Film = {
       source: "TMDB",
       tmdb_id: 84,
       local_rating: "4.00",
+      current_user_rating: null,
     },
   ],
   source: "TMDB",
@@ -54,6 +55,7 @@ const film: Film = {
   tmdb_vote_count: 4500,
   poster_path: "/cinema-paradiso.jpg",
   local_rating: "4.50",
+  current_user_rating: null,
   created_at: "2026-01-01T10:00:00Z",
   updated_at: "2026-01-01T10:00:00Z",
 };
@@ -176,6 +178,27 @@ describe("film detail", () => {
       }),
     ).toBeTruthy();
     await waitFor(() => expect(filmsApi.getFilm).toHaveBeenCalledTimes(2));
+  });
+
+  test("restores the current user's ratings after loading the film", async () => {
+    vi.mocked(filmsApi.getFilm).mockResolvedValue({
+      ...film,
+      current_user_rating: 3,
+      authors: [{ ...film.authors[0], current_user_rating: 2 }],
+    });
+
+    renderDetail();
+
+    expect(
+      await screen.findByRole("button", {
+        name: "Noter Cinema Paradiso, note actuelle 3 sur 5",
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", {
+        name: "Noter Giuseppe Tornatore, note actuelle 2 sur 5",
+      }),
+    ).toBeTruthy();
   });
 
   test("rates an author from their card", async () => {

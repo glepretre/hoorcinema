@@ -20,6 +20,7 @@ export interface AuthorSummary {
   source: FilmSource;
   tmdb_id: number | null;
   local_rating: string | null;
+  current_user_rating: number | null;
 }
 
 export interface Film {
@@ -37,6 +38,7 @@ export interface Film {
   tmdb_vote_count: number;
   poster_path: string;
   local_rating: string | null;
+  current_user_rating: number | null;
   created_at: string;
   updated_at: string;
 }

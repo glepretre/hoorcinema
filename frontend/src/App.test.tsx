@@ -50,6 +50,7 @@ const film: Film = {
   tmdb_vote_count: 4500,
   poster_path: "/cinema-paradiso.jpg",
   local_rating: "4.50",
+  current_user_rating: null,
   created_at: "2026-01-01T10:00:00Z",
   updated_at: "2026-01-01T10:00:00Z",
 };

@@ -323,6 +323,7 @@ export function FilmDetail({
               {canRate ? (
                 <RatingPopover
                   label={`Noter ${film.title}`}
+                  initialScore={film.current_user_rating}
                   onRate={(score) => rateFilm(film.id, score)}
                   onRated={(score) => handleRated("Film", score)}
                 />
@@ -379,6 +380,7 @@ export function FilmDetail({
                       {canRate ? (
                         <RatingPopover
                           label={`Noter ${authorName(author)}`}
+                          initialScore={author.current_user_rating}
                           onRate={(score) => rateAuthor(author.id, score)}
                           onRated={(score) => handleRated("Auteur", score)}
                         />

@@ -8,6 +8,7 @@ const { Text } = Typography;
 
 interface RatingPopoverProps {
   label: string;
+  initialScore: number | null;
   onRate: (score: number) => Promise<unknown>;
   onRated: (score: number) => void;
 }
@@ -22,9 +23,14 @@ function ratingErrorMessage(error: unknown): string {
   return "Impossible d’enregistrer la note. Réessayez.";
 }
 
-export function RatingPopover({ label, onRate, onRated }: RatingPopoverProps) {
+export function RatingPopover({
+  label,
+  initialScore,
+  onRate,
+  onRated,
+}: RatingPopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [score, setScore] = useState(0);
+  const [score, setScore] = useState(initialScore ?? 0);
   const mutation = useMutation({
     mutationFn: onRate,
     onSuccess: (_rating, submittedScore) => {

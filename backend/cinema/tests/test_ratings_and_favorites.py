@@ -108,8 +108,20 @@ def test_rating_updates_are_reflected_in_public_aggregates(interactions):
     author = APIClient().get(
         reverse("author-detail", args=(interactions["author"].pk,))
     )
+    current_user_film = first_client.get(
+        reverse("film-detail", args=(interactions["film"].pk,))
+    )
+    current_user_author = first_client.get(
+        reverse("author-detail", args=(interactions["author"].pk,))
+    )
     assert film.json()["local_rating"] == "3.00"
+    assert film.json()["current_user_rating"] is None
     assert author.json()["local_rating"] == "4.00"
+    assert author.json()["current_user_rating"] is None
+    assert current_user_film.json()["current_user_rating"] == 2
+    assert current_user_film.json()["authors"][0]["current_user_rating"] == 3
+    assert current_user_author.json()["current_user_rating"] == 3
+    assert current_user_author.json()["films"][0]["current_user_rating"] == 2
 
 
 @pytest.mark.django_db

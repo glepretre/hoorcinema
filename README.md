@@ -308,7 +308,9 @@ Film statuses use TMDb's exact values: `Rumored`, `Planned`, `In Production`,
 `GET /api/films/{id}/` is public and returns nested authors, local ratings on 5,
 TMDb ratings on 10, source metadata, and timestamps. Archived films remain
 directly readable. Decimal ratings are represented as two-decimal JSON strings
-and missing ratings are `null`.
+and missing ratings are `null`. When an access token is supplied,
+`current_user_rating` contains that spectator's integer score; otherwise it is
+`null`.
 
 ### Administer Films
 
